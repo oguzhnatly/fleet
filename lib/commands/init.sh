@@ -1,5 +1,5 @@
-#!/bin/bash
-# fleet init — Interactive configuration setup
+#!/usr/bin/env bash
+# fleet init — Interactive configuration setup with auto-PATH
 
 cmd_init() {
     out_header "Fleet Setup"
@@ -7,6 +7,10 @@ cmd_init() {
     local config_dir
     config_dir=$(dirname "$FLEET_CONFIG_PATH")
 
+    # ── Step 1: Ensure fleet is in PATH ─────────────────────────────────────
+    _ensure_path
+
+    # ── Step 2: Create config ───────────────────────────────────────────────
     if [ -f "$FLEET_CONFIG_PATH" ]; then
         out_warn "Config already exists at $FLEET_CONFIG_PATH"
         echo ""
@@ -47,7 +51,7 @@ print(c.get('workspace', ''))
 
     # Build config
     python3 - "$config_dir" "$detected_port" "$detected_workspace" <<'INIT_PY'
-import json, sys, os
+import json, sys, os, subprocess
 
 config_dir = sys.argv[1]
 detected_port = sys.argv[2] or "48391"
@@ -71,9 +75,7 @@ config = {
     }
 }
 
-# Auto-detect additional gateways
 G = "\033[32m"; D = "\033[2m"; N = "\033[0m"
-import subprocess
 
 print(f"  {G}✅{N} Main gateway detected on :{detected_port}")
 if detected_workspace:
@@ -114,4 +116,55 @@ INIT_PY
 
     echo ""
     out_ok "Fleet initialized"
+}
+
+# ── PATH helper ─────────────────────────────────────────────────────────────
+_ensure_path() {
+    local bin_dir="$HOME/.local/bin"
+    local fleet_bin="$FLEET_ROOT/bin/fleet"
+
+    # Create ~/.local/bin if it doesn't exist
+    mkdir -p "$bin_dir"
+
+    # Symlink fleet into ~/.local/bin
+    if [ ! -L "$bin_dir/fleet" ] && [ ! -f "$bin_dir/fleet" ]; then
+        ln -sf "$fleet_bin" "$bin_dir/fleet"
+        out_ok "Linked fleet to $bin_dir/fleet"
+    elif [ -L "$bin_dir/fleet" ]; then
+        # Update existing symlink
+        ln -sf "$fleet_bin" "$bin_dir/fleet"
+        out_ok "Updated fleet symlink in $bin_dir/"
+    fi
+
+    # Check if ~/.local/bin is in PATH
+    if echo "$PATH" | tr ':' '\n' | grep -q "^$bin_dir$"; then
+        out_ok "$bin_dir is in PATH"
+        return
+    fi
+
+    # Add to PATH in shell rc files
+    local added=false
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+        if [ -f "$rc" ]; then
+            if ! grep -q '\.local/bin' "$rc" 2>/dev/null; then
+                echo '' >> "$rc"
+                echo '# Added by fleet — https://github.com/oguzhnatly/fleet' >> "$rc"
+                echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+                out_ok "Added $bin_dir to PATH in $(basename "$rc")"
+                added=true
+            else
+                out_ok "$bin_dir already in $(basename "$rc")"
+                added=true
+            fi
+        fi
+    done
+
+    if [ "$added" = true ]; then
+        # Export for current session too
+        export PATH="$bin_dir:$PATH"
+        out_info "PATH updated for current session"
+    else
+        out_warn "Could not find shell rc file. Add manually:"
+        echo '       export PATH="$HOME/.local/bin:$PATH"'
+    fi
 }

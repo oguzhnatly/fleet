@@ -49,6 +49,7 @@ cmd_help() {
     fleet health              Health check all gateways and endpoints
     fleet agents              Show all agent gateways with status
     fleet sitrep [hours]      Structured status report with delta tracking
+    fleet audit               Check for misconfigurations and risks
 
   DEVELOPMENT
     fleet ci [filter]         GitHub CI status across repos
@@ -57,7 +58,7 @@ cmd_help() {
   OPERATIONS
     fleet backup              Backup all configs
     fleet restore             Restore from latest backup
-    fleet init                Interactive setup
+    fleet init                Interactive setup (auto-links PATH)
 
   OPTIONS
     fleet --version           Show version
@@ -77,6 +78,7 @@ case "${1:-help}" in
     health)              cmd_health ;;
     agents|employees)    cmd_agents ;;
     sitrep|status)       cmd_sitrep "${2:-4}" ;;
+    audit|check)         cmd_audit ;;
     ci)                  cmd_ci "${2:-}" ;;
     skills)              cmd_skills ;;
     backup)              cmd_backup ;;
