@@ -25,9 +25,7 @@
 
 ---
 
-You're running multiple [OpenClaw](https://openclaw.ai) gateways — a coordinator that thinks, employees that code, review, deploy, and research. Fleet gives your coordinator full operational awareness: which agents are up, which CI is red, what changed since the last check.
-
-**One command. Full visibility. Delta tracking.**
+You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator that thinks, employees that code, review, deploy, and research. Fleet gives your coordinator full operational awareness. Which agents are up, which CI is red, what changed since the last check.
 
 ```bash
 $ fleet sitrep
@@ -59,21 +57,19 @@ CHANGED
 Resources  mem 45% | disk 7%
 ```
 
-One command. Full visibility. Delta tracking shows only what changed.
-
 ### Why Fleet?
 
-🔍 **Visibility** — Know which agents are up, which CI is red, what changed overnight. One command, full picture.
+🔍 **Visibility** · Know which agents are up, which CI is red, what changed overnight. One command, full picture.
 
-📊 **Delta tracking** — SITREP remembers the last run. Only shows what _changed_. No noise.
+📊 **Delta tracking** · SITREP remembers the last run. Only shows what _changed_. No noise.
 
-🔧 **Zero config (almost)** — `fleet init` auto-detects running gateways, discovers your workspace, links itself to PATH. One command to go from clone to operational.
+🔧 **Zero config** · `fleet init` detects running gateways, discovers your workspace, links itself to PATH. One command to go from clone to operational.
 
-🧩 **Modular** — Each command is a separate file. Adding a new command = dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
+🧩 **Modular** · Each command is a separate file. Adding a new command means dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
 
-⚡ **Agent-native** — Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage an entire fleet autonomously.
+⚡ **Agent native** · Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage an entire fleet autonomously.
 
-📦 **Pattern library** — Solo empire, dev team, research lab. Pre-built configs for common setups.
+📦 **Pattern library** · Solo empire, dev team, research lab. Pre built configs for common setups.
 
 ## Quick Start
 
@@ -83,7 +79,7 @@ clawhub install fleet
 
 # Or clone directly
 git clone https://github.com/oguzhnatly/fleet.git
-fleet/bin/fleet init    # auto-links PATH, detects gateways, creates config
+fleet/bin/fleet init    # links PATH, detects gateways, creates config
 
 # Check your fleet
 fleet agents
@@ -115,7 +111,7 @@ fleet sitrep
 |---------|-------------|
 | `fleet backup` | Backup gateway configs, cron jobs, auth profiles |
 | `fleet restore` | Restore from latest backup |
-| `fleet init` | Interactive setup with auto-detection |
+| `fleet init` | Interactive setup with gateway detection |
 
 <details>
 <summary><strong>See more command output examples</strong></summary>
@@ -160,7 +156,7 @@ Resources
 Backups
   ✅ Last backup: 2 day(s) ago
 
-  All clear — 11 checks passed, 0 warnings
+  All clear · 11 checks passed, 0 warnings
 ```
 
 #### `fleet ci`
@@ -229,11 +225,11 @@ Fleet supports any agent organization pattern. Three common ones:
 ```
             Director (Opus)
           /     |      \       \
-    Scraper  Analyst  Writer  Fact-Check
+    Scraper  Analyst  Writer  Fact Check
    (Codex)  (Sonnet) (Sonnet)  (Codex)
 ```
 
-See [`docs/patterns.md`](docs/patterns.md) for detailed guides and [`examples/`](examples/) for ready-to-use configs.
+See [`docs/patterns.md`](docs/patterns.md) for detailed guides and [`examples/`](examples/) for configs.
 
 ## Configuration
 
@@ -248,7 +244,7 @@ Fleet reads `~/.fleet/config.json`. Create one with `fleet init` or manually:
   },
   "agents": [
     { "name": "coder", "port": 48520, "role": "implementation", "model": "codex" },
-    { "name": "reviewer", "port": 48540, "role": "code-review", "model": "codex" }
+    { "name": "reviewer", "port": 48540, "role": "code review", "model": "codex" }
   ],
   "endpoints": [
     { "name": "website", "url": "https://myapp.com" },
@@ -286,6 +282,7 @@ fleet/
 │   │   └── state.sh       # Delta state persistence
 │   └── commands/           # One file per command
 │       ├── agents.sh       # Agent fleet status
+│       ├── audit.sh        # Misconfiguration checker
 │       ├── backup.sh       # Config backup/restore
 │       ├── ci.sh           # GitHub CI integration
 │       ├── health.sh       # Endpoint health checks
@@ -317,10 +314,13 @@ The agent reads the skill file, learns the commands, and runs health checks auto
 
 ## Requirements
 
-- bash 4+ and python3 3.10+ (no pip packages needed)
-- [OpenClaw](https://openclaw.ai) with gateway support
-- `curl` (pre-installed on most systems)
-- [`gh` CLI](https://cli.github.com/) (optional, for CI commands)
+| Dependency | Version | Notes |
+|------------|---------|-------|
+| bash | 4+ | macOS ships 3.2, run `brew install bash` |
+| python3 | 3.10+ | No pip packages needed |
+| curl | any | Pre installed on most systems |
+| [OpenClaw](https://openclaw.ai) | any | Gateway support required |
+| [gh CLI](https://cli.github.com/) | any | Optional, for CI commands |
 
 ## Contributing
 
@@ -338,4 +338,4 @@ If Fleet is useful to you, consider supporting its development:
 
 ## License
 
-[MIT](LICENSE) — [Oguzhan Atalay](https://github.com/oguzhnatly)
+[MIT](LICENSE) · [Oguzhan Atalay](https://github.com/oguzhnatly)

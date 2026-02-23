@@ -77,7 +77,7 @@ Temporary teams assembled for specific projects, then disbanded. The coordinator
 
 Every pattern can be scaled by:
 
-1. **Adding more agents** — More employees under existing leads
-2. **Adding more tiers** — Sub-leads or specialized coordinators
-3. **Adding cross-cutting agents** — Monitoring, compliance, documentation
-4. **Hybrid patterns** — Solo empire for products, research lab for content
+1. **Adding more agents** · More employees under existing leads
+2. **Adding more tiers** · Sub-leads or specialized coordinators
+3. **Adding cross-cutting agents** · Monitoring, compliance, documentation
+4. **Hybrid patterns** · Solo empire for products, research lab for content

@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Core CLI with modular architecture (`lib/core/` + `lib/commands/`)
-- `fleet health` — health check all gateways and endpoints
-- `fleet agents` — show agent fleet with live status and latency
-- `fleet sitrep` — structured status report with delta tracking
-- `fleet ci` — GitHub CI status across repos
-- `fleet skills` — list installed ClawHub skills
-- `fleet backup` / `fleet restore` — config backup and restoration
-- `fleet init` — interactive setup with auto-detection
+- `fleet health` · health check all gateways and endpoints
+- `fleet agents` · show agent fleet with live status and latency
+- `fleet sitrep` · structured status report with delta tracking
+- `fleet ci` · GitHub CI status across repos
+- `fleet skills` · list installed ClawHub skills
+- `fleet backup` / `fleet restore` · config backup and restoration
+- `fleet init` · interactive setup with auto-detection
 - Config-driven design (`~/.fleet/config.json`)
 - Three fleet patterns: solo-empire, dev-team, research-lab
 - SKILL.md for ClawHub publishing

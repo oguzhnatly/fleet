@@ -30,7 +30,7 @@ Open an [issue](https://github.com/oguzhnatly/fleet/issues/new?template=feature_
 
 ### New Commands
 
-Fleet is modular — each command is a separate file in `lib/commands/`. To add a new command:
+Fleet is modular · each command is a separate file in `lib/commands/`. To add a new command:
 
 1. Create `lib/commands/yourcommand.sh`
 2. Define a `cmd_yourcommand()` function
@@ -41,17 +41,17 @@ Fleet is modular — each command is a separate file in `lib/commands/`. To add 
 ### New Fleet Patterns
 
 Add examples to `examples/your-pattern/`:
-- `config.json` — working config file
-- `README.md` — explanation of the pattern, when to use it, architecture diagram
+- `config.json` · working config file
+- `README.md` · explanation of the pattern, when to use it, architecture diagram
 
 ## Code Style
 
-- **Bash 4+** — no bashisms that break on older systems
-- **ShellCheck clean** — all code must pass `shellcheck -S warning`
-- **Python 3.10+** — for JSON parsing and complex logic inside heredocs
-- **No external dependencies** — no pip packages, no npm, no jq. Just bash, python3, and curl.
-- **Colors via `lib/core/output.sh`** — use `out_ok`, `out_fail`, `out_warn`, `out_info` helpers
-- **Config via `lib/core/config.sh`** — use `_json_get` for reading config values
+- **Bash 4+** · no bashisms that break on older systems
+- **ShellCheck clean** · all code must pass `shellcheck -S warning`
+- **Python 3.10+** · for JSON parsing and complex logic inside heredocs
+- **No external dependencies** · no pip packages, no npm, no jq. Just bash, python3, and curl.
+- **Colors via `lib/core/output.sh`** · use `out_ok`, `out_fail`, `out_warn`, `out_info` helpers
+- **Config via `lib/core/config.sh`** · use `_json_get` for reading config values
 
 ## Testing
 
