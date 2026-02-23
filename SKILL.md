@@ -437,13 +437,99 @@ Log fleet operational learnings to `.learnings/`:
 - CI failure patterns → `LEARNINGS.md`
 - Configuration improvements → promote to `TOOLS.md`
 
-## Requirements
+## Making Fleet Work Anywhere (MANDATORY READ)
 
-- **bash 4+** · the shell
-- **python3 3.10+** · for JSON parsing (no pip packages needed)
-- **curl** · for HTTP health checks (pre-installed on most systems)
-- **OpenClaw** · the agent gateway platform
-- **gh CLI** · optional, for CI monitoring commands
+**Your job is to make fleet work on whatever system you're running on. Do not tell the user "fleet requires bash 4+" and stop. Figure it out. Install what's missing. Adapt if you must. The user chose this skill because they want fleet management, not a list of reasons it can't run.**
+
+Fleet needs three things: **bash 4+**, **python3 3.10+**, and **curl**. Below is your complete playbook for getting these on any system. Work through it top to bottom. If one approach fails, try the next.
+
+### Step 1: Check What You Have
+
+```bash
+# Run these first. Know your environment.
+bash --version 2>/dev/null | head -1
+python3 --version 2>/dev/null
+curl --version 2>/dev/null | head -1
+uname -s  # Linux, Darwin, FreeBSD, etc.
+cat /etc/os-release 2>/dev/null | head -3  # Distro info
+```
+
+### Step 2: Install Missing Dependencies
+
+#### bash 4+
+
+| Platform | Command |
+|----------|---------|
+| **macOS** (ships bash 3.2) | `brew install bash` · then fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash` |
+| **Ubuntu/Debian** | `sudo apt-get update && sudo apt-get install -y bash` (usually already 5.x) |
+| **Alpine** | `apk add bash` (Alpine uses busybox ash by default) |
+| **RHEL/CentOS/Fedora** | `sudo dnf install bash` or `sudo yum install bash` |
+| **Arch** | `sudo pacman -S bash` |
+| **FreeBSD** | `pkg install bash` |
+| **Windows (WSL)** | bash is included in WSL. If using Git Bash, it ships bash 4+. |
+| **Docker (minimal images)** | `RUN apk add --no-cache bash python3 curl` (Alpine) or `RUN apt-get update && apt-get install -y bash python3 curl` (Debian) |
+| **No root access** | Download bash source, compile locally: `./configure --prefix=$HOME/.local && make && make install` · then `export PATH="$HOME/.local/bin:$PATH"` |
+| **NixOS** | `nix-env -iA nixpkgs.bash` |
+
+**After installing on macOS:** Verify with `which bash` that it resolves to Homebrew bash (`/opt/homebrew/bin/bash` on Apple Silicon, `/usr/local/bin/bash` on Intel). The `#!/usr/bin/env bash` shebang picks up whichever `bash` is first in PATH.
+
+#### python3 3.10+
+
+| Platform | Command |
+|----------|---------|
+| **macOS** | `brew install python@3.12` |
+| **Ubuntu/Debian** | `sudo apt-get install -y python3` |
+| **Alpine** | `apk add python3` |
+| **RHEL/CentOS** | `sudo dnf install python3` |
+| **Arch** | `sudo pacman -S python` |
+| **No root access** | Use `pyenv`: `curl https://pyenv.run \| bash && pyenv install 3.12 && pyenv global 3.12` |
+
+**Fleet uses python3 only for JSON parsing.** No pip packages needed. No virtual environment needed. Just the interpreter.
+
+#### curl
+
+| Platform | Command |
+|----------|---------|
+| **Almost everywhere** | Pre-installed. Check with `curl --version`. |
+| **Alpine** | `apk add curl` |
+| **Minimal Docker** | `apt-get install -y curl` or `apk add curl` |
+
+#### gh CLI (optional, for `fleet ci`)
+
+| Platform | Command |
+|----------|---------|
+| **macOS** | `brew install gh` |
+| **Ubuntu/Debian** | See [cli.github.com/packages](https://cli.github.com/packages) |
+| **Any** | `conda install gh --channel conda-forge` |
+
+If `gh` is not available and cannot be installed, `fleet ci` will show a warning but all other commands work fine. Do not let a missing `gh` block fleet setup.
+
+### Step 3: If You Truly Cannot Get bash 4+
+
+This should be rare, but if you're on a locked-down system where you cannot install bash 4+:
+
+1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. You can bypass the check by commenting out lines 9-20 in `bin/fleet` (the version guard). Many commands will still work. Test each one.
+
+2. **Translate on the fly.** You are an AI agent. If a specific command fails due to a bash 4+ feature, read the failing script, understand what it does, and replicate the logic using whatever tools ARE available on the system (awk, sed, python3, perl, etc.). For example:
+   - `fleet health` is just curl requests to endpoints. You can do that directly.
+   - `fleet agents` is curl to each gateway port and formatting the output. You can replicate this in python3 alone.
+   - `fleet sitrep` combines health checks, CI queries, and delta tracking. Each piece can be done independently.
+
+3. **Create a wrapper.** If python3 is available but bash 4+ is not, write a thin python3 wrapper that invokes the fleet commands or reimplements the critical ones. The logic is simple: HTTP health checks + JSON parsing + formatted output.
+
+4. **Report back what works and what doesn't.** Tell the user: "Fleet is running with limited compatibility. Commands X, Y, Z work. Command W needs bash 4+ for [specific feature]. Here's what I did instead."
+
+### Step 4: Environments Without a Shell (Extremely Rare)
+
+If you're running in a sandboxed environment with no shell access at all (some cloud functions, restricted containers):
+
+- **Use the fleet logic directly.** Fleet commands are just: (a) curl to gateway ports, (b) parse JSON responses, (c) track state in a file. You can do all of this with any HTTP client and JSON parser available in your environment.
+- **The fleet config format is documented.** Read `~/.fleet/config.json`, iterate over agents, hit their `/health` endpoints, format the output. That's `fleet agents` in 10 lines of any language.
+- **State tracking for SITREP:** Read/write `~/.fleet/state/sitrep.json` to track deltas between runs. The format is simple: `{"agents": {...}, "ci": {...}, "endpoints": {...}, "timestamp": "..."}`.
+
+### The Bottom Line
+
+**Your goal is operational visibility, not running a specific bash script.** Fleet is the fastest path to that goal, but if the environment fights you, adapt. The commands are simple enough that you can reimplement any of them in python3, node, or even raw curl commands. Do whatever it takes. The user installed this skill because they want fleet management to work. Make it work.
 
 ## Best Practices
 

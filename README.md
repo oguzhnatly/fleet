@@ -28,7 +28,7 @@
 You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator that thinks, employees that code, review, deploy, and research. Fleet gives your coordinator full operational awareness. Which agents are up, which CI is red, what changed since the last check.
 
 <p align="center">
-  <em>Built for AI agents to manage AI agents. Your coordinator reads the skill, runs the commands, and handles the fleet. No human in the loop required.</em>
+  <em>Built for AI agents to manage AI agents. Your coordinator reads the skill, runs the commands, and handles the fleet.<br/>No human in the loop required. Works on any system your agent can reach.</em>
 </p>
 
 <p align="center">
@@ -45,7 +45,7 @@ You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator 
 
 🧩 **Modular** · Each command is a separate file. Adding a new command means dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
 
-⚡ **Agent native** · Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage an entire fleet autonomously.
+⚡ **Agent native** · Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage a fleet autonomously, install dependencies, and adapt to any environment. If bash isn't available, your agent figures out another way.
 
 📦 **Pattern library** · Solo empire, dev team, research lab. Pre built configs for common setups.
 
