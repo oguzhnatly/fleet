@@ -1,6 +1,7 @@
 ---
 name: fleet
-description: "Multi-agent fleet management CLI for OpenClaw. Use when: (1) checking health of agent gateways, (2) running structured status reports (SITREP) with delta tracking, (3) monitoring CI across repos, (4) listing installed skills, (5) backing up agent configs, (6) initializing a new fleet. Triggers: 'check agents', 'fleet status', 'run sitrep', 'health check', 'backup config', 'show agents', 'fleet report', 'how many agents online', 'CI status', 'what skills installed'."
+description: "Monitor, manage, and orchestrate a fleet of OpenClaw agent gateways. Health checks, SITREP reports with delta tracking, CI status, config backups, and audit."
+triggers: "check agents, fleet status, run sitrep, health check, backup config, show agents, fleet report, how many agents online, CI status, what skills installed"
 ---
 
 # Fleet · Multi-Agent Fleet Management

@@ -1,5 +1,9 @@
 {
   "slug": "fleet",
   "version": "1.1.0",
+  "requires": {
+    "binaries": ["bash", "python3", "curl"],
+    "optionalBinaries": ["gh"]
+  },
   "description": "Multi-agent fleet management CLI for OpenClaw"
 }
