@@ -31,36 +31,6 @@ You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator 
   <img src="assets/demo.gif" alt="Fleet Demo" width="700" />
 </p>
 
-```bash
-$ fleet sitrep
-
-SITREP | 2026-02-23 08:00 UTC | vs 2026-02-22 23:00
-────────────────────────────────────────────────────────────
-
-Agents  6/6 online
-  ⬢ coordinator
-  ⬢ coder
-  ⬢ reviewer
-  ⬢ deployer
-  ⬢ qa
-  ⬢ researcher
-
-CI
-  ✅ frontend
-  ❌ backend
-  ✅ mobile
-
-Services
-  ✅ website (200)
-  ✅ api (200)
-
-CHANGED
-  → CI backend: green → RED
-  → Linear tickets: +3
-
-Resources  mem 45% | disk 7%
-```
-
 ### Why Fleet?
 
 🔍 **Visibility** · Know which agents are up, which CI is red, what changed overnight. One command, full picture.
