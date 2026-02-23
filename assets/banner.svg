@@ -1,48 +1,136 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 220">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a" />
-      <stop offset="100%" style="stop-color:#1e293b" />
+      <stop offset="0%" style="stop-color:#0c1222" />
+      <stop offset="50%" style="stop-color:#131d33" />
+      <stop offset="100%" style="stop-color:#0f172a" />
     </linearGradient>
     <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#3b82f6" />
       <stop offset="100%" style="stop-color:#8b5cf6" />
     </linearGradient>
+    <linearGradient id="green-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ade80" />
+      <stop offset="100%" style="stop-color:#22c55e" />
+    </linearGradient>
+    <linearGradient id="blue-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa" />
+      <stop offset="100%" style="stop-color:#3b82f6" />
+    </linearGradient>
+    <style>
+      @keyframes pulse-agent {
+        0%, 100% { opacity: 0.7; r: 6; }
+        50% { opacity: 1; r: 7.5; }
+      }
+      @keyframes pulse-coord {
+        0%, 100% { opacity: 0.8; r: 9; }
+        50% { opacity: 1; r: 11; }
+      }
+      @keyframes dash-flow {
+        0% { stroke-dashoffset: 20; }
+        100% { stroke-dashoffset: 0; }
+      }
+      @keyframes fade-in {
+        0% { opacity: 0; transform: translateY(5px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      .agent-dot { animation: pulse-agent 2.5s ease-in-out infinite; }
+      .agent-dot-d1 { animation-delay: 0s; }
+      .agent-dot-d2 { animation-delay: 0.4s; }
+      .agent-dot-d3 { animation-delay: 0.8s; }
+      .agent-dot-d4 { animation-delay: 1.2s; }
+      .agent-dot-d5 { animation-delay: 1.6s; }
+      .coord-dot { animation: pulse-coord 3s ease-in-out infinite; }
+      .conn-line { 
+        stroke-dasharray: 4 4;
+        animation: dash-flow 1.5s linear infinite;
+      }
+      .conn-line-d1 { animation-delay: 0s; }
+      .conn-line-d2 { animation-delay: 0.3s; }
+      .conn-line-d3 { animation-delay: 0.6s; }
+      .conn-line-d4 { animation-delay: 0.9s; }
+      .conn-line-d5 { animation-delay: 1.2s; }
+    </style>
   </defs>
   
-  <rect width="600" height="200" rx="12" fill="url(#bg)" />
+  <!-- Background -->
+  <rect width="800" height="220" rx="16" fill="url(#bg)" />
   
-  <!-- Anchor/fleet icon -->
-  <g transform="translate(80, 60)">
-    <text font-size="60" fill="none" stroke="url(#accent)" stroke-width="1.5" font-family="system-ui, sans-serif">⛵</text>
+  <!-- Subtle grid pattern -->
+  <g opacity="0.03">
+    <line x1="0" y1="40" x2="800" y2="40" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="80" x2="800" y2="80" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="120" x2="800" y2="120" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="160" x2="800" y2="160" stroke="white" stroke-width="0.5" />
+    <line x1="100" y1="0" x2="100" y2="220" stroke="white" stroke-width="0.5" />
+    <line x1="200" y1="0" x2="200" y2="220" stroke="white" stroke-width="0.5" />
+    <line x1="300" y1="0" x2="300" y2="220" stroke="white" stroke-width="0.5" />
+    <line x1="400" y1="0" x2="400" y2="220" stroke="white" stroke-width="0.5" />
+    <line x1="500" y1="0" x2="500" y2="220" stroke="white" stroke-width="0.5" />
+    <line x1="600" y1="0" x2="600" y2="220" stroke="white" stroke-width="0.5" />
+    <line x1="700" y1="0" x2="700" y2="220" stroke="white" stroke-width="0.5" />
+  </g>
+  
+  <!-- Fleet icon (anchor/helm wheel) -->
+  <g transform="translate(120, 110)">
+    <!-- Outer ring -->
+    <circle cx="0" cy="0" r="32" fill="none" stroke="url(#accent)" stroke-width="2.5" opacity="0.3" />
+    <circle cx="0" cy="0" r="24" fill="none" stroke="url(#accent)" stroke-width="1.5" opacity="0.5" />
+    <!-- Inner hexagon shape -->
+    <polygon points="0,-18 15.6,-9 15.6,9 0,18 -15.6,9 -15.6,-9" fill="none" stroke="url(#accent)" stroke-width="1.5" opacity="0.7" />
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="5" fill="url(#blue-glow)" opacity="0.9" />
+    <!-- Spokes -->
+    <line x1="0" y1="-18" x2="0" y2="-30" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
+    <line x1="15.6" y1="-9" x2="26" y2="-15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
+    <line x1="15.6" y1="9" x2="26" y2="15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
+    <line x1="0" y1="18" x2="0" y2="30" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
+    <line x1="-15.6" y1="9" x2="-26" y2="15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
+    <line x1="-15.6" y1="-9" x2="-26" y2="-15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
   </g>
   
   <!-- Title -->
-  <text x="170" y="105" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">fleet</text>
+  <text x="190" y="105" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', monospace" font-size="64" font-weight="700" fill="white" letter-spacing="-2">fleet</text>
   
   <!-- Subtitle -->
-  <text x="170" y="135" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#94a3b8">Multi-agent fleet management for OpenClaw</text>
+  <text x="192" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#64748b">Multi-agent fleet management for OpenClaw</text>
   
-  <!-- Decorative dots representing agents -->
-  <g transform="translate(430, 55)">
-    <circle cx="0" cy="0" r="6" fill="#22c55e" opacity="0.9" />
-    <circle cx="25" cy="0" r="6" fill="#22c55e" opacity="0.9" />
-    <circle cx="50" cy="0" r="6" fill="#22c55e" opacity="0.9" />
-    <circle cx="75" cy="0" r="6" fill="#22c55e" opacity="0.9" />
-    <circle cx="100" cy="0" r="6" fill="#22c55e" opacity="0.9" />
+  <!-- Version badge -->
+  <rect x="192" y="148" width="56" height="22" rx="11" fill="#1e293b" stroke="#334155" stroke-width="0.5" />
+  <text x="220" y="163" font-family="ui-monospace, monospace" font-size="11" fill="#60a5fa" text-anchor="middle">v1.0.0</text>
+  
+  <!-- Agent fleet visualization -->
+  <g transform="translate(600, 70)">
+    <!-- Connection lines (animated dashes) -->
+    <line x1="60" y1="0" x2="0" y2="55" class="conn-line conn-line-d1" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
+    <line x1="60" y1="0" x2="30" y2="55" class="conn-line conn-line-d2" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
+    <line x1="60" y1="0" x2="60" y2="55" class="conn-line conn-line-d3" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
+    <line x1="60" y1="0" x2="90" y2="55" class="conn-line conn-line-d4" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
+    <line x1="60" y1="0" x2="120" y2="55" class="conn-line conn-line-d5" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
     
-    <!-- Connection lines -->
-    <line x1="50" y1="-30" x2="0" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
-    <line x1="50" y1="-30" x2="25" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
-    <line x1="50" y1="-30" x2="50" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
-    <line x1="50" y1="-30" x2="75" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
-    <line x1="50" y1="-30" x2="100" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
+    <!-- Coordinator glow -->
+    <circle cx="60" cy="0" r="16" fill="#3b82f6" opacity="0.08" />
+    <circle cx="60" cy="0" r="12" fill="#3b82f6" opacity="0.12" />
     
     <!-- Coordinator dot -->
-    <circle cx="50" cy="-30" r="8" fill="#3b82f6" />
+    <circle cx="60" cy="0" r="9" fill="url(#blue-glow)" class="coord-dot" />
+    
+    <!-- Agent dots (green = online) -->
+    <circle cx="0" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d1" />
+    <circle cx="30" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d2" />
+    <circle cx="60" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d3" />
+    <circle cx="90" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d4" />
+    <circle cx="120" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d5" />
+    
+    <!-- Labels -->
+    <text x="60" y="-18" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.7">coordinator</text>
+    <text x="0" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
+    <text x="30" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
+    <text x="60" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
+    <text x="90" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
+    <text x="120" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
   </g>
   
-  <!-- Version tag -->
-  <rect x="440" y="125" width="70" height="24" rx="12" fill="#1e3a5f" />
-  <text x="475" y="141" font-family="system-ui, sans-serif" font-size="12" fill="#60a5fa" text-anchor="middle">v1.0.0</text>
+  <!-- Bottom accent line -->
+  <rect x="0" y="214" width="800" height="6" rx="0 0 16 16" fill="url(#accent)" opacity="0.15" />
 </svg>
