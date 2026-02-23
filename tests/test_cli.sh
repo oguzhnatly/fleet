@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # fleet integration tests
 set -uo pipefail
 

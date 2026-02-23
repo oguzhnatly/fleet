@@ -1,10 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  fleet — Multi-agent fleet management for OpenClaw                      ║
 # ║  https://github.com/oguzhnatly/fleet                                    ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
 set -euo pipefail
+
+# ── Check bash version (need 4+ for reliable behavior) ─────────────────────
+if [ "${BASH_VERSINFO[0]}" -lt 4 ] 2>/dev/null; then
+    echo "fleet requires bash 4+. You have bash ${BASH_VERSION}."
+    echo ""
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macOS ships bash 3.2. Install newer bash:"
+        echo "  brew install bash"
+        echo "Then run: /opt/homebrew/bin/bash $(realpath "$0") $*"
+    else
+        echo "Update bash via your package manager."
+    fi
+    exit 1
+fi
 
 # ── Resolve install directory ───────────────────────────────────────────────
 FLEET_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
