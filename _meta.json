@@ -1,0 +1,5 @@
+{
+  "slug": "fleet",
+  "version": "1.0.0",
+  "description": "Multi-agent fleet management CLI for OpenClaw"
+}

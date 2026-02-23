@@ -1,0 +1,46 @@
+{
+  "workspace": "~/research",
+  "gateway": {
+    "port": 48391,
+    "name": "director",
+    "role": "research-director",
+    "model": "claude-opus-4"
+  },
+  "agents": [
+    {
+      "name": "analyst",
+      "port": 48420,
+      "role": "data-analyst",
+      "model": "claude-sonnet-4",
+      "token": "emp-analyst-token"
+    },
+    {
+      "name": "writer",
+      "port": 48440,
+      "role": "technical-writer",
+      "model": "claude-sonnet-4",
+      "token": "emp-writer-token"
+    },
+    {
+      "name": "scraper",
+      "port": 48460,
+      "role": "web-scraping",
+      "model": "codex",
+      "token": "emp-scraper-token"
+    },
+    {
+      "name": "fact-checker",
+      "port": 48480,
+      "role": "verification",
+      "model": "codex",
+      "token": "emp-factcheck-token"
+    }
+  ],
+  "endpoints": [
+    { "name": "dashboard", "url": "https://research.mysite.com" }
+  ],
+  "repos": [
+    { "name": "reports", "repo": "myorg/research-reports" },
+    { "name": "data-pipeline", "repo": "myorg/data-pipeline" }
+  ]
+}

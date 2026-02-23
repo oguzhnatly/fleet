@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a" />
+      <stop offset="100%" style="stop-color:#1e293b" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6" />
+      <stop offset="100%" style="stop-color:#8b5cf6" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="600" height="200" rx="12" fill="url(#bg)" />
+  
+  <!-- Anchor/fleet icon -->
+  <g transform="translate(80, 60)">
+    <text font-size="60" fill="none" stroke="url(#accent)" stroke-width="1.5" font-family="system-ui, sans-serif">⛵</text>
+  </g>
+  
+  <!-- Title -->
+  <text x="170" y="105" font-family="system-ui, -apple-system, sans-serif" font-size="56" font-weight="700" fill="white" letter-spacing="-1">fleet</text>
+  
+  <!-- Subtitle -->
+  <text x="170" y="135" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#94a3b8">Multi-agent fleet management for OpenClaw</text>
+  
+  <!-- Decorative dots representing agents -->
+  <g transform="translate(430, 55)">
+    <circle cx="0" cy="0" r="6" fill="#22c55e" opacity="0.9" />
+    <circle cx="25" cy="0" r="6" fill="#22c55e" opacity="0.9" />
+    <circle cx="50" cy="0" r="6" fill="#22c55e" opacity="0.9" />
+    <circle cx="75" cy="0" r="6" fill="#22c55e" opacity="0.9" />
+    <circle cx="100" cy="0" r="6" fill="#22c55e" opacity="0.9" />
+    
+    <!-- Connection lines -->
+    <line x1="50" y1="-30" x2="0" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
+    <line x1="50" y1="-30" x2="25" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
+    <line x1="50" y1="-30" x2="50" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
+    <line x1="50" y1="-30" x2="75" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
+    <line x1="50" y1="-30" x2="100" y2="0" stroke="#3b82f6" stroke-width="1" opacity="0.4" />
+    
+    <!-- Coordinator dot -->
+    <circle cx="50" cy="-30" r="8" fill="#3b82f6" />
+  </g>
+  
+  <!-- Version tag -->
+  <rect x="440" y="125" width="70" height="24" rx="12" fill="#1e3a5f" />
+  <text x="475" y="141" font-family="system-ui, sans-serif" font-size="12" fill="#60a5fa" text-anchor="middle">v1.0.0</text>
+</svg>

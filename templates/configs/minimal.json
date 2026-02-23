@@ -1,0 +1,12 @@
+{
+  "workspace": "~/workspace",
+  "gateway": {
+    "port": 48391,
+    "name": "main",
+    "role": "coordinator",
+    "model": "default"
+  },
+  "agents": [],
+  "endpoints": [],
+  "repos": []
+}

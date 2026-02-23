@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check bash syntax
+        run: |
+          for f in bin/fleet lib/core/*.sh lib/commands/*.sh; do
+            echo "Checking $f..."
+            bash -n "$f"
+          done
+
+      - name: Validate example configs
+        run: |
+          for f in examples/*/config.json templates/configs/*.json; do
+            if [ -f "$f" ]; then
+              echo "Validating $f..."
+              python3 -c "import json; json.load(open('$f'))"
+            fi
+          done
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './lib'
+          additional_files: 'bin/fleet'
+          severity: warning
+
+  test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          chmod +x bin/fleet
+          bash tests/test_cli.sh

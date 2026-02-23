@@ -1,0 +1,37 @@
+{
+  "workspace": "~/workspace",
+  "gateway": {
+    "port": 48391,
+    "name": "brain",
+    "role": "coordinator",
+    "model": "claude-opus-4"
+  },
+  "agents": [
+    {
+      "name": "coder",
+      "port": 48520,
+      "role": "implementation",
+      "model": "codex",
+      "token": "emp-coder-token"
+    },
+    {
+      "name": "reviewer",
+      "port": 48540,
+      "role": "code-review",
+      "model": "codex",
+      "token": "emp-reviewer-token"
+    }
+  ],
+  "endpoints": [
+    { "name": "website", "url": "https://myapp.com" },
+    { "name": "api", "url": "https://api.myapp.com/health" }
+  ],
+  "repos": [
+    { "name": "web", "repo": "myorg/web" },
+    { "name": "backend", "repo": "myorg/backend" }
+  ],
+  "linear": {
+    "teams": ["PROJ"],
+    "apiKeyEnv": "LINEAR_API_KEY"
+  }
+}

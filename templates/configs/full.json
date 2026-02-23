@@ -1,0 +1,67 @@
+{
+  "workspace": "~/workspace",
+  "gateway": {
+    "port": 48391,
+    "name": "coordinator",
+    "role": "coordinator",
+    "model": "claude-opus-4"
+  },
+  "agents": [
+    {
+      "name": "coder",
+      "port": 48520,
+      "role": "implementation",
+      "model": "codex",
+      "token": "your-token-here"
+    },
+    {
+      "name": "reviewer",
+      "port": 48540,
+      "role": "code-review",
+      "model": "codex",
+      "token": "your-token-here"
+    },
+    {
+      "name": "deployer",
+      "port": 48560,
+      "role": "deployment",
+      "model": "codex",
+      "token": "your-token-here"
+    },
+    {
+      "name": "qa",
+      "port": 48580,
+      "role": "quality-assurance",
+      "model": "codex",
+      "token": "your-token-here"
+    },
+    {
+      "name": "researcher",
+      "port": 48600,
+      "role": "research",
+      "model": "codex",
+      "token": "your-token-here"
+    }
+  ],
+  "endpoints": [
+    { "name": "website", "url": "https://example.com", "expectedStatus": 200 },
+    { "name": "api", "url": "https://api.example.com/health", "expectedStatus": 200 },
+    { "name": "docs", "url": "https://docs.example.com", "expectedStatus": 200, "timeout": 10 }
+  ],
+  "repos": [
+    { "name": "frontend", "repo": "myorg/frontend" },
+    { "name": "backend", "repo": "myorg/backend" },
+    { "name": "mobile", "repo": "myorg/mobile" },
+    { "name": "infra", "repo": "myorg/infrastructure" }
+  ],
+  "services": [
+    "openclaw-gateway",
+    "openclaw-gateway-coder",
+    "openclaw-gateway-reviewer"
+  ],
+  "linear": {
+    "teams": ["PROJ"],
+    "apiKeyEnv": "LINEAR_API_KEY"
+  },
+  "skillsDir": ""
+}

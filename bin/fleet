@@ -1,0 +1,77 @@
+#!/bin/bash
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  fleet — Multi-agent fleet management for OpenClaw                      ║
+# ║  https://github.com/oguzhnatly/fleet                                    ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+set -euo pipefail
+
+# ── Resolve install directory ───────────────────────────────────────────────
+FLEET_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# ── Load core libraries ────────────────────────────────────────────────────
+source "$FLEET_ROOT/lib/core/config.sh"
+source "$FLEET_ROOT/lib/core/output.sh"
+source "$FLEET_ROOT/lib/core/state.sh"
+
+# ── Load commands ───────────────────────────────────────────────────────────
+for cmd_file in "$FLEET_ROOT/lib/commands/"*.sh; do
+    [ -f "$cmd_file" ] && source "$cmd_file"
+done
+
+# ── Version ─────────────────────────────────────────────────────────────────
+if [ "${1:-}" = "--version" ] || [ "${1:-}" = "-v" ]; then
+    echo "fleet v${FLEET_VERSION}"
+    exit 0
+fi
+
+# ── Help ────────────────────────────────────────────────────────────────────
+cmd_help() {
+    cat <<'HELP'
+
+  ⛵ fleet — Multi-agent fleet management for OpenClaw
+
+  MONITORING
+    fleet health              Health check all gateways and endpoints
+    fleet agents              Show all agent gateways with status
+    fleet sitrep [hours]      Structured status report with delta tracking
+
+  DEVELOPMENT
+    fleet ci [filter]         GitHub CI status across repos
+    fleet skills              List installed ClawHub skills
+
+  OPERATIONS
+    fleet backup              Backup all configs
+    fleet restore             Restore from latest backup
+    fleet init                Interactive setup
+
+  OPTIONS
+    fleet --version           Show version
+    fleet help                This help message
+
+  CONFIG
+    Default: ~/.fleet/config.json
+    Override: FLEET_CONFIG=/path/to/config.json
+
+  Docs: https://github.com/oguzhnatly/fleet
+
+HELP
+}
+
+# ── Route ───────────────────────────────────────────────────────────────────
+case "${1:-help}" in
+    health)              cmd_health ;;
+    agents|employees)    cmd_agents ;;
+    sitrep|status)       cmd_sitrep "${2:-4}" ;;
+    ci)                  cmd_ci "${2:-}" ;;
+    skills)              cmd_skills ;;
+    backup)              cmd_backup ;;
+    restore)             cmd_restore ;;
+    init|setup)          cmd_init ;;
+    help|--help|-h)      cmd_help ;;
+    *)
+        echo "  Unknown command: $1"
+        echo "  Run 'fleet help' for usage."
+        exit 1
+        ;;
+esac
