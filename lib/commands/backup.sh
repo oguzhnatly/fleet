@@ -2,7 +2,8 @@
 # fleet backup / fleet restore — Config backup and restoration
 
 cmd_backup() {
-    local backup_dir="$HOME/.fleet/backups/$(date +%Y%m%d-%H%M%S)"
+    local backup_dir
+    backup_dir="$HOME/.fleet/backups/$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$backup_dir"
 
     out_header "Backup"

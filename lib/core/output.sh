@@ -7,7 +7,7 @@ if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
     CLR_RED="\033[31m"
     CLR_YELLOW="\033[33m"
     CLR_BLUE="\033[34m"
-    CLR_CYAN="\033[36m"
+    CLR_CYAN="\033[36m"  # shellcheck disable=SC2034
     CLR_DIM="\033[2m"
     CLR_BOLD="\033[1m"
     CLR_RESET="\033[0m"
