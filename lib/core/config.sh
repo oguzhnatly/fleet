@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet/lib/core/config.sh — Configuration loader and resolver
+# fleet/lib/core/config.sh · Configuration loader and resolver
 # Reads ~/.fleet/config.json (or $FLEET_CONFIG) and provides accessor functions.
 
 # shellcheck disable=SC2034

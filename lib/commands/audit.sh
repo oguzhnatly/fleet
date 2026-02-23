@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fleet audit — Check for misconfigurations and operational risks
+# fleet audit · Check for misconfigurations and operational risks
 
 cmd_audit() {
     out_header "Fleet Audit"
@@ -237,7 +237,7 @@ print(int((total - avail) / total * 100))
     # ── Summary ─────────────────────────────────────────────────────────────
     echo ""
     if [ "$warnings" -eq 0 ]; then
-        echo -e "  ${CLR_GREEN}${CLR_BOLD}All clear${CLR_RESET} — $checks checks passed, 0 warnings"
+        echo -e "  ${CLR_GREEN}${CLR_BOLD}All clear${CLR_RESET} · $checks checks passed, 0 warnings"
     else
         echo -e "  ${CLR_YELLOW}${CLR_BOLD}${warnings} warning(s)${CLR_RESET} across $checks checks"
     fi

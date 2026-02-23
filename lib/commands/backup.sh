@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet backup / fleet restore — Config backup and restoration
+# fleet backup / fleet restore · Config backup and restoration
 
 cmd_backup() {
     local backup_dir
@@ -14,7 +14,7 @@ cmd_backup() {
     if [ -f "$HOME/.openclaw/openclaw.json" ]; then
         cp "$HOME/.openclaw/openclaw.json" "$backup_dir/"
         out_ok "openclaw.json"
-        ((count++))
+        count=$((count + 1))
     fi
 
     # Cron jobs
@@ -22,14 +22,14 @@ cmd_backup() {
         mkdir -p "$backup_dir/cron"
         cp "$HOME/.openclaw/cron/jobs.json" "$backup_dir/cron/"
         out_ok "cron/jobs.json"
-        ((count++))
+        count=$((count + 1))
     fi
 
     # Fleet config
     if [ -f "$FLEET_CONFIG_PATH" ]; then
         cp "$FLEET_CONFIG_PATH" "$backup_dir/fleet-config.json"
         out_ok "fleet config"
-        ((count++))
+        count=$((count + 1))
     fi
 
     # Auth profiles
@@ -42,7 +42,7 @@ cmd_backup() {
             cp "$1" "'"$backup_dir"'/auth/$rel"
         ' _ {} \;
         out_ok "auth profiles"
-        ((count++))
+        count=$((count + 1))
     fi
 
     echo ""

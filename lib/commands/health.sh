@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet health — Check gateway and all configured endpoints
+# fleet health · Check gateway and all configured endpoints
 
 cmd_health() {
     out_header "Fleet Health Check"

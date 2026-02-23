@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet ci — GitHub CI status across configured repos
+# fleet ci · GitHub CI status across configured repos
 
 cmd_ci() {
     local filter="${1:-}"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet/lib/core/output.sh — Colored output, formatting, and display helpers
+# fleet/lib/core/output.sh · Colored output, formatting, and display helpers
 # shellcheck disable=SC2034
 
 # ── Colors (auto-disable if not a terminal) ─────────────────────────────────

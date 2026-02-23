@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  fleet — Multi-agent fleet management for OpenClaw                      ║
+# ║  fleet · Multi-agent fleet management for OpenClaw                      ║
 # ║  https://github.com/oguzhnatly/fleet                                    ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 

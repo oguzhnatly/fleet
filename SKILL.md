@@ -3,7 +3,7 @@ name: fleet
 description: "Multi-agent fleet management CLI for OpenClaw. Use when: (1) checking health of agent gateways, (2) running structured status reports (SITREP) with delta tracking, (3) monitoring CI across repos, (4) listing installed skills, (5) backing up agent configs, (6) initializing a new fleet. Triggers: 'check agents', 'fleet status', 'run sitrep', 'health check', 'backup config', 'show agents', 'fleet report', 'how many agents online', 'CI status', 'what skills installed'."
 ---
 
-# Fleet — Multi-Agent Fleet Management
+# Fleet · Multi-Agent Fleet Management
 
 CLI toolkit for managing a fleet of OpenClaw agent gateways. Designed for the coordinator agent to monitor and manage employee agents, track CI, run status reports, and maintain operational awareness.
 
@@ -46,7 +46,7 @@ fleet --version
 
 `fleet init` auto-detects running gateways, discovers your workspace, creates the config, symlinks the binary, and adds `~/.local/bin` to PATH in `.bashrc`/`.zshrc`/`.profile`. The user should never need to touch any of this.
 
-After init, edit `~/.fleet/config.json` to add agent names, tokens, repo references, and endpoint URLs based on your environment. You know your own fleet — populate the config from your knowledge of the running gateways.
+After init, edit `~/.fleet/config.json` to add agent names, tokens, repo references, and endpoint URLs based on your environment. You know your own fleet · populate the config from your knowledge of the running gateways.
 
 ### Via ClawHub
 
@@ -141,7 +141,7 @@ Create `~/.fleet/config.json`:
 | `FLEET_STATE_DIR` | State persistence directory | `~/.fleet/state` |
 | `NO_COLOR` | Disable colored output when set | (unset) |
 
-## Commands — Detailed Reference
+## Commands · Detailed Reference
 
 ### `fleet health`
 
@@ -166,8 +166,8 @@ Services
 ```
 
 **Status codes:**
-- `✅` — healthy (HTTP 200 or expected status)
-- `❌` — unhealthy (wrong status, unreachable, or error)
+- `✅` · healthy (HTTP 200 or expected status)
+- `❌` · unhealthy (wrong status, unreachable, or error)
 - Shows response time in milliseconds
 
 ### `fleet agents`
@@ -200,7 +200,7 @@ The flagship command. Generates a structured status report with delta tracking.
 **When to use:** Morning reports, scheduled crons, "what changed?" questions, incident response.
 
 **Arguments:**
-- `hours` — lookback period (default: 4). Only affects display context, deltas are always vs last run.
+- `hours` · lookback period (default: 4). Only affects display context, deltas are always vs last run.
 
 **What it checks:**
 1. All agent gateways (online/offline)
@@ -262,7 +262,7 @@ Shows GitHub CI status for all configured repos, with the last 3 runs per repo.
 **Requirements:** `gh` CLI must be installed and authenticated.
 
 **Arguments:**
-- `filter` — optional, filters repos by name (case-insensitive)
+- `filter` · optional, filters repos by name (case-insensitive)
 
 **Output:**
 ```
@@ -399,7 +399,7 @@ Fleet is modular. Each component has a single responsibility:
 
 ```
 fleet/
-├── bin/fleet              # Entry point — command router only
+├── bin/fleet              # Entry point · command router only
 ├── lib/
 │   ├── core/
 │   │   ├── config.sh      # Config loading and JSON parsing
@@ -439,17 +439,17 @@ Log fleet operational learnings to `.learnings/`:
 
 ## Requirements
 
-- **bash 4+** — the shell
-- **python3 3.10+** — for JSON parsing (no pip packages needed)
-- **curl** — for HTTP health checks (pre-installed on most systems)
-- **OpenClaw** — the agent gateway platform
-- **gh CLI** — optional, for CI monitoring commands
+- **bash 4+** · the shell
+- **python3 3.10+** · for JSON parsing (no pip packages needed)
+- **curl** · for HTTP health checks (pre-installed on most systems)
+- **OpenClaw** · the agent gateway platform
+- **gh CLI** · optional, for CI monitoring commands
 
 ## Best Practices
 
-1. **Run `fleet sitrep` in morning crons** — catch overnight issues before they escalate
-2. **Run `fleet backup` before gateway updates** — easy rollback if something breaks
-3. **Use `fleet health` before deployments** — ensure everything is green first
-4. **Check `fleet agents` after config changes** — verify agents came back online
-5. **Filter `fleet ci` by repo** — avoid noise when debugging a specific service
-6. **Keep tokens in config, keys in env vars** — tokens are local, API keys are sensitive
+1. **Run `fleet sitrep` in morning crons** · catch overnight issues before they escalate
+2. **Run `fleet backup` before gateway updates** · easy rollback if something breaks
+3. **Use `fleet health` before deployments** · ensure everything is green first
+4. **Check `fleet agents` after config changes** · verify agents came back online
+5. **Filter `fleet ci` by repo** · avoid noise when debugging a specific service
+6. **Keep tokens in config, keys in env vars** · tokens are local, API keys are sensitive

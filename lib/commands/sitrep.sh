@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet sitrep — Structured status report with delta tracking
+# fleet sitrep · Structured status report with delta tracking
 
 cmd_sitrep() {
     local hours="${1:-4}"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet/lib/core/state.sh — State persistence for delta tracking (SITREP, audits)
+# fleet/lib/core/state.sh · State persistence for delta tracking (SITREP, audits)
 
 FLEET_STATE_DIR="${FLEET_STATE_DIR:-$HOME/.fleet/state}"
 

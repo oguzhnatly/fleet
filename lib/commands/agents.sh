@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet agents — Show all configured agent gateways with health status
+# fleet agents · Show all configured agent gateways with health status
 
 cmd_agents() {
     out_header "Agent Fleet"

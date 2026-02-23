@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet skills — List installed ClawHub skills
+# fleet skills · List installed ClawHub skills
 
 cmd_skills() {
     local skills_dir
