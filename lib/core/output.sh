@@ -1,5 +1,6 @@
 #!/bin/bash
 # fleet/lib/core/output.sh — Colored output, formatting, and display helpers
+# shellcheck disable=SC2034
 
 # ── Colors (auto-disable if not a terminal) ─────────────────────────────────
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -7,7 +8,6 @@ if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
     CLR_RED="\033[31m"
     CLR_YELLOW="\033[33m"
     CLR_BLUE="\033[34m"
-    # shellcheck disable=SC2034
     CLR_CYAN="\033[36m"
     CLR_DIM="\033[2m"
     CLR_BOLD="\033[1m"
