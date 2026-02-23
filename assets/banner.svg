@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0c1222" />
-      <stop offset="50%" style="stop-color:#131d33" />
-      <stop offset="100%" style="stop-color:#0f172a" />
+      <stop offset="0%" style="stop-color:#06080f" />
+      <stop offset="40%" style="stop-color:#0d1525" />
+      <stop offset="100%" style="stop-color:#0a1020" />
     </linearGradient>
     <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#3b82f6" />
@@ -17,120 +17,233 @@
       <stop offset="0%" style="stop-color:#60a5fa" />
       <stop offset="100%" style="stop-color:#3b82f6" />
     </linearGradient>
+    <radialGradient id="coord-glow-rad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0" />
+    </radialGradient>
+    <radialGradient id="agent-glow-rad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#22c55e;stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
     <style>
       @keyframes pulse-agent {
-        0%, 100% { opacity: 0.7; r: 6; }
-        50% { opacity: 1; r: 7.5; }
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
       }
       @keyframes pulse-coord {
-        0%, 100% { opacity: 0.8; r: 9; }
-        50% { opacity: 1; r: 11; }
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+      }
+      @keyframes glow-ring {
+        0%, 100% { opacity: 0.15; }
+        50% { opacity: 0.4; }
       }
       @keyframes dash-flow {
-        0% { stroke-dashoffset: 20; }
+        0% { stroke-dashoffset: 24; }
         100% { stroke-dashoffset: 0; }
       }
-      @keyframes fade-in {
+      @keyframes signal-send {
         0% { opacity: 0; }
-        100% { opacity: 1; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { opacity: 0; }
       }
-      .agent-dot { animation: pulse-agent 2.5s ease-in-out infinite; }
-      .agent-dot-d1 { animation-delay: 0s; }
-      .agent-dot-d2 { animation-delay: 0.4s; }
-      .agent-dot-d3 { animation-delay: 0.8s; }
-      .agent-dot-d4 { animation-delay: 1.2s; }
-      .agent-dot-d5 { animation-delay: 1.6s; }
-      .coord-dot { animation: pulse-coord 3s ease-in-out infinite; }
-      .conn-line { 
-        stroke-dasharray: 4 4;
-        animation: dash-flow 1.5s linear infinite;
+      @keyframes orbit {
+        0% { opacity: 0.3; }
+        25% { opacity: 0.8; }
+        50% { opacity: 0.3; }
+        75% { opacity: 0.8; }
+        100% { opacity: 0.3; }
       }
-      .conn-line-d1 { animation-delay: 0s; }
-      .conn-line-d2 { animation-delay: 0.3s; }
-      .conn-line-d3 { animation-delay: 0.6s; }
-      .conn-line-d4 { animation-delay: 0.9s; }
-      .conn-line-d5 { animation-delay: 1.2s; }
+      @keyframes scale-pulse {
+        0%, 100% { r: 8; }
+        50% { r: 11; }
+      }
+      @keyframes scale-pulse-sm {
+        0%, 100% { r: 6; }
+        50% { r: 8; }
+      }
+      @keyframes beacon {
+        0% { r: 14; opacity: 0.5; }
+        100% { r: 40; opacity: 0; }
+      }
+      @keyframes float-up {
+        0%, 100% { opacity: 0.05; }
+        50% { opacity: 0.12; }
+      }
+      .agent-dot { animation: pulse-agent 2s ease-in-out infinite; }
+      .agent-scale { animation: scale-pulse-sm 2s ease-in-out infinite; }
+      .d0 { animation-delay: 0s; }
+      .d1 { animation-delay: 0.3s; }
+      .d2 { animation-delay: 0.6s; }
+      .d3 { animation-delay: 0.9s; }
+      .d4 { animation-delay: 1.2s; }
+      .d5 { animation-delay: 1.5s; }
+      .d6 { animation-delay: 1.8s; }
+      .coord-dot { animation: pulse-coord 2.5s ease-in-out infinite; }
+      .coord-scale { animation: scale-pulse 2.5s ease-in-out infinite; }
+      .glow-ring { animation: glow-ring 3s ease-in-out infinite; }
+      .beacon { animation: beacon 2.5s ease-out infinite; }
+      .beacon-d1 { animation-delay: 0.8s; }
+      .conn-line {
+        stroke-dasharray: 6 6;
+        animation: dash-flow 1.2s linear infinite;
+      }
+      .signal {
+        animation: signal-send 2s ease-in-out infinite;
+      }
+      .signal-d1 { animation-delay: 0.5s; }
+      .signal-d2 { animation-delay: 1.0s; }
+      .signal-d3 { animation-delay: 1.5s; }
+      .signal-d4 { animation-delay: 2.0s; }
+      .orbit-dot { animation: orbit 4s ease-in-out infinite; }
+      .orbit-d1 { animation-delay: 1s; }
+      .orbit-d2 { animation-delay: 2s; }
+      .orbit-d3 { animation-delay: 3s; }
+      .bg-particle { animation: float-up 5s ease-in-out infinite; }
+      .bg-p1 { animation-delay: 0s; }
+      .bg-p2 { animation-delay: 1.2s; }
+      .bg-p3 { animation-delay: 2.4s; }
+      .bg-p4 { animation-delay: 3.6s; }
     </style>
   </defs>
   
   <!-- Background -->
-  <rect width="800" height="220" rx="16" fill="url(#bg)" />
+  <rect width="900" height="300" rx="16" fill="url(#bg)" />
   
-  <!-- Subtle grid pattern -->
-  <g opacity="0.03">
-    <line x1="0" y1="40" x2="800" y2="40" stroke="white" stroke-width="0.5" />
-    <line x1="0" y1="80" x2="800" y2="80" stroke="white" stroke-width="0.5" />
-    <line x1="0" y1="120" x2="800" y2="120" stroke="white" stroke-width="0.5" />
-    <line x1="0" y1="160" x2="800" y2="160" stroke="white" stroke-width="0.5" />
-    <line x1="100" y1="0" x2="100" y2="220" stroke="white" stroke-width="0.5" />
-    <line x1="200" y1="0" x2="200" y2="220" stroke="white" stroke-width="0.5" />
-    <line x1="300" y1="0" x2="300" y2="220" stroke="white" stroke-width="0.5" />
-    <line x1="400" y1="0" x2="400" y2="220" stroke="white" stroke-width="0.5" />
-    <line x1="500" y1="0" x2="500" y2="220" stroke="white" stroke-width="0.5" />
-    <line x1="600" y1="0" x2="600" y2="220" stroke="white" stroke-width="0.5" />
-    <line x1="700" y1="0" x2="700" y2="220" stroke="white" stroke-width="0.5" />
+  <!-- Animated background particles -->
+  <circle cx="120" cy="60" r="1.5" fill="#3b82f6" class="bg-particle bg-p1" />
+  <circle cx="300" cy="230" r="1" fill="#8b5cf6" class="bg-particle bg-p2" />
+  <circle cx="500" cy="40" r="1.5" fill="#3b82f6" class="bg-particle bg-p3" />
+  <circle cx="780" cy="260" r="1" fill="#22c55e" class="bg-particle bg-p4" />
+  <circle cx="650" cy="30" r="1.5" fill="#8b5cf6" class="bg-particle bg-p1" />
+  <circle cx="200" cy="270" r="1" fill="#3b82f6" class="bg-particle bg-p3" />
+  <circle cx="820" cy="100" r="1.5" fill="#22c55e" class="bg-particle bg-p2" />
+  <circle cx="400" cy="280" r="1" fill="#8b5cf6" class="bg-particle bg-p4" />
+  
+  <!-- Subtle grid -->
+  <g opacity="0.025">
+    <line x1="0" y1="50" x2="900" y2="50" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="100" x2="900" y2="100" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="150" x2="900" y2="150" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="200" x2="900" y2="200" stroke="white" stroke-width="0.5" />
+    <line x1="0" y1="250" x2="900" y2="250" stroke="white" stroke-width="0.5" />
+    <line x1="150" y1="0" x2="150" y2="300" stroke="white" stroke-width="0.5" />
+    <line x1="300" y1="0" x2="300" y2="300" stroke="white" stroke-width="0.5" />
+    <line x1="450" y1="0" x2="450" y2="300" stroke="white" stroke-width="0.5" />
+    <line x1="600" y1="0" x2="600" y2="300" stroke="white" stroke-width="0.5" />
+    <line x1="750" y1="0" x2="750" y2="300" stroke="white" stroke-width="0.5" />
   </g>
   
-  <!-- Fleet icon (anchor/helm wheel) -->
-  <g transform="translate(120, 110)">
-    <!-- Outer ring -->
-    <circle cx="0" cy="0" r="32" fill="none" stroke="url(#accent)" stroke-width="2.5" opacity="0.3" />
-    <circle cx="0" cy="0" r="24" fill="none" stroke="url(#accent)" stroke-width="1.5" opacity="0.5" />
-    <!-- Inner hexagon shape -->
-    <polygon points="0,-18 15.6,-9 15.6,9 0,18 -15.6,9 -15.6,-9" fill="none" stroke="url(#accent)" stroke-width="1.5" opacity="0.7" />
-    <!-- Center dot -->
-    <circle cx="0" cy="0" r="5" fill="url(#blue-glow)" opacity="0.9" />
+  <!-- Fleet icon (animated hexagonal helm) -->
+  <g transform="translate(130, 130)">
+    <!-- Animated outer rings -->
+    <circle cx="0" cy="0" r="48" fill="none" stroke="#3b82f6" stroke-width="1" class="glow-ring" />
+    <circle cx="0" cy="0" r="38" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity="0.25" />
+    
+    <!-- Beacon rings (pulsing outward) -->
+    <circle cx="0" cy="0" fill="none" stroke="#3b82f6" stroke-width="1" class="beacon" />
+    <circle cx="0" cy="0" fill="none" stroke="#3b82f6" stroke-width="1" class="beacon beacon-d1" />
+    
+    <!-- Rotating orbit dots -->
+    <circle cx="42" cy="0" r="2" fill="#3b82f6" class="orbit-dot" />
+    <circle cx="-42" cy="0" r="2" fill="#3b82f6" class="orbit-dot orbit-d1" />
+    <circle cx="0" cy="42" r="2" fill="#3b82f6" class="orbit-dot orbit-d2" />
+    <circle cx="0" cy="-42" r="2" fill="#3b82f6" class="orbit-dot orbit-d3" />
+    
+    <!-- Inner hexagon -->
+    <polygon points="0,-26 22.5,-13 22.5,13 0,26 -22.5,13 -22.5,-13" fill="none" stroke="url(#accent)" stroke-width="2" opacity="0.6" />
+    
     <!-- Spokes -->
-    <line x1="0" y1="-18" x2="0" y2="-30" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
-    <line x1="15.6" y1="-9" x2="26" y2="-15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
-    <line x1="15.6" y1="9" x2="26" y2="15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
-    <line x1="0" y1="18" x2="0" y2="30" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
-    <line x1="-15.6" y1="9" x2="-26" y2="15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
-    <line x1="-15.6" y1="-9" x2="-26" y2="-15" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" />
+    <line x1="0" y1="-26" x2="0" y2="-38" stroke="#3b82f6" stroke-width="1.5" opacity="0.35" />
+    <line x1="22.5" y1="-13" x2="33" y2="-19" stroke="#3b82f6" stroke-width="1.5" opacity="0.35" />
+    <line x1="22.5" y1="13" x2="33" y2="19" stroke="#3b82f6" stroke-width="1.5" opacity="0.35" />
+    <line x1="0" y1="26" x2="0" y2="38" stroke="#3b82f6" stroke-width="1.5" opacity="0.35" />
+    <line x1="-22.5" y1="13" x2="-33" y2="19" stroke="#3b82f6" stroke-width="1.5" opacity="0.35" />
+    <line x1="-22.5" y1="-13" x2="-33" y2="-19" stroke="#3b82f6" stroke-width="1.5" opacity="0.35" />
+    
+    <!-- Center core -->
+    <circle cx="0" cy="0" r="8" fill="url(#blue-glow)" class="coord-dot" filter="url(#glow)" />
   </g>
   
   <!-- Title -->
-  <text x="190" y="105" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', monospace" font-size="64" font-weight="700" fill="white" letter-spacing="-2">fleet</text>
+  <text x="220" y="120" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', monospace" font-size="78" font-weight="700" fill="white" letter-spacing="-3">fleet</text>
   
   <!-- Subtitle -->
-  <text x="192" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#64748b">Multi-agent fleet management for OpenClaw</text>
+  <text x="224" y="158" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" fill="#64748b">Multi-agent fleet management for OpenClaw</text>
   
-  <!-- Version badge -->
-  <rect x="192" y="148" width="56" height="22" rx="11" fill="#1e293b" stroke="#334155" stroke-width="0.5" />
-  <text x="220" y="163" font-family="ui-monospace, monospace" font-size="11" fill="#60a5fa" text-anchor="middle">v1.0.0</text>
-  
-  <!-- Agent fleet visualization -->
-  <g transform="translate(600, 70)">
-    <!-- Connection lines (animated dashes) -->
-    <line x1="60" y1="0" x2="0" y2="55" class="conn-line conn-line-d1" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
-    <line x1="60" y1="0" x2="30" y2="55" class="conn-line conn-line-d2" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
-    <line x1="60" y1="0" x2="60" y2="55" class="conn-line conn-line-d3" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
-    <line x1="60" y1="0" x2="90" y2="55" class="conn-line conn-line-d4" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
-    <line x1="60" y1="0" x2="120" y2="55" class="conn-line conn-line-d5" stroke="#3b82f6" stroke-width="1" opacity="0.35" />
+  <!-- Version + badges row -->
+  <g transform="translate(224, 175)">
+    <rect x="0" y="0" width="56" height="24" rx="12" fill="#1e293b" stroke="#334155" stroke-width="0.5" />
+    <text x="28" y="16" font-family="ui-monospace, monospace" font-size="11" fill="#60a5fa" text-anchor="middle">v1.0.0</text>
     
-    <!-- Coordinator glow -->
-    <circle cx="60" cy="0" r="16" fill="#3b82f6" opacity="0.08" />
-    <circle cx="60" cy="0" r="12" fill="#3b82f6" opacity="0.12" />
+    <rect x="66" y="0" width="40" height="24" rx="12" fill="#0d2818" stroke="#16a34a" stroke-width="0.5" opacity="0.8" />
+    <text x="86" y="16" font-family="ui-monospace, monospace" font-size="11" fill="#4ade80" text-anchor="middle">MIT</text>
     
-    <!-- Coordinator dot -->
-    <circle cx="60" cy="0" r="9" fill="url(#blue-glow)" class="coord-dot" />
-    
-    <!-- Agent dots (green = online) -->
-    <circle cx="0" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d1" />
-    <circle cx="30" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d2" />
-    <circle cx="60" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d3" />
-    <circle cx="90" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d4" />
-    <circle cx="120" cy="55" r="6" fill="url(#green-glow)" class="agent-dot agent-dot-d5" />
-    
-    <!-- Labels -->
-    <text x="60" y="-18" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.7">coordinator</text>
-    <text x="0" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
-    <text x="30" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
-    <text x="60" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
-    <text x="90" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
-    <text x="120" y="75" font-family="ui-monospace, monospace" font-size="8" fill="#94a3b8" text-anchor="middle" opacity="0.5">agent</text>
+    <rect x="116" y="0" width="58" height="24" rx="12" fill="#1a1a2e" stroke="#7c3aed" stroke-width="0.5" opacity="0.8" />
+    <text x="145" y="16" font-family="ui-monospace, monospace" font-size="11" fill="#a78bfa" text-anchor="middle">bash 4+</text>
   </g>
   
-  <!-- Bottom accent line -->
-  <rect x="0" y="214" width="800" height="6" rx="0 0 16 16" fill="url(#accent)" opacity="0.15" />
+  <!-- Agent fleet visualization (larger, more dramatic) -->
+  <g transform="translate(610, 65)">
+    <!-- Connection lines (animated flowing dashes) -->
+    <line x1="110" y1="0" x2="0" y2="80" class="conn-line d0" stroke="#3b82f6" stroke-width="1.5" opacity="0.3" />
+    <line x1="110" y1="0" x2="44" y2="80" class="conn-line d1" stroke="#3b82f6" stroke-width="1.5" opacity="0.3" />
+    <line x1="110" y1="0" x2="88" y2="80" class="conn-line d2" stroke="#3b82f6" stroke-width="1.5" opacity="0.3" />
+    <line x1="110" y1="0" x2="132" y2="80" class="conn-line d3" stroke="#3b82f6" stroke-width="1.5" opacity="0.3" />
+    <line x1="110" y1="0" x2="176" y2="80" class="conn-line d4" stroke="#3b82f6" stroke-width="1.5" opacity="0.3" />
+    <line x1="110" y1="0" x2="220" y2="80" class="conn-line d5" stroke="#3b82f6" stroke-width="1.5" opacity="0.3" />
+    
+    <!-- Signal packets moving along lines -->
+    <circle cx="55" cy="40" r="2" fill="#60a5fa" class="signal d0" />
+    <circle cx="77" cy="40" r="2" fill="#60a5fa" class="signal signal-d1" />
+    <circle cx="99" cy="40" r="2" fill="#60a5fa" class="signal signal-d2" />
+    <circle cx="121" cy="40" r="2" fill="#60a5fa" class="signal signal-d3" />
+    <circle cx="143" cy="40" r="2" fill="#60a5fa" class="signal signal-d4" />
+    <circle cx="165" cy="40" r="2" fill="#60a5fa" class="signal d0" />
+    
+    <!-- Coordinator glow -->
+    <circle cx="110" cy="0" r="30" fill="url(#coord-glow-rad)" />
+    
+    <!-- Coordinator dot -->
+    <circle cx="110" cy="0" fill="url(#blue-glow)" class="coord-scale" filter="url(#glow)" />
+    
+    <!-- Coordinator label -->
+    <text x="110" y="-22" font-family="ui-monospace, monospace" font-size="10" fill="#94a3b8" text-anchor="middle">coordinator</text>
+    
+    <!-- Agent glow halos -->
+    <circle cx="0" cy="80" r="20" fill="url(#agent-glow-rad)" class="agent-dot d0" />
+    <circle cx="44" cy="80" r="20" fill="url(#agent-glow-rad)" class="agent-dot d1" />
+    <circle cx="88" cy="80" r="20" fill="url(#agent-glow-rad)" class="agent-dot d2" />
+    <circle cx="132" cy="80" r="20" fill="url(#agent-glow-rad)" class="agent-dot d3" />
+    <circle cx="176" cy="80" r="20" fill="url(#agent-glow-rad)" class="agent-dot d4" />
+    <circle cx="220" cy="80" r="20" fill="url(#agent-glow-rad)" class="agent-dot d5" />
+    
+    <!-- Agent dots -->
+    <circle cx="0" cy="80" fill="url(#green-glow)" class="agent-scale d0" filter="url(#glow)" />
+    <circle cx="44" cy="80" fill="url(#green-glow)" class="agent-scale d1" filter="url(#glow)" />
+    <circle cx="88" cy="80" fill="url(#green-glow)" class="agent-scale d2" filter="url(#glow)" />
+    <circle cx="132" cy="80" fill="url(#green-glow)" class="agent-scale d3" filter="url(#glow)" />
+    <circle cx="176" cy="80" fill="url(#green-glow)" class="agent-scale d4" filter="url(#glow)" />
+    <circle cx="220" cy="80" fill="url(#green-glow)" class="agent-scale d5" filter="url(#glow)" />
+    
+    <!-- Agent labels -->
+    <text x="0" y="102" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.6">coder</text>
+    <text x="44" y="102" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.6">review</text>
+    <text x="88" y="102" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.6">deploy</text>
+    <text x="132" y="102" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.6">qa</text>
+    <text x="176" y="102" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.6">research</text>
+    <text x="220" y="102" font-family="ui-monospace, monospace" font-size="9" fill="#94a3b8" text-anchor="middle" opacity="0.6">writer</text>
+    
+    <!-- Status indicators -->
+    <text x="110" y="135" font-family="ui-monospace, monospace" font-size="11" fill="#4ade80" text-anchor="middle" opacity="0.7">6/6 online</text>
+  </g>
+  
+  <!-- Bottom accent line with gradient -->
+  <rect x="0" y="292" width="900" height="8" rx="0" fill="url(#accent)" opacity="0.12" />
+  <rect x="200" y="294" width="500" height="4" rx="2" fill="url(#accent)" opacity="0.25" />
 </svg>

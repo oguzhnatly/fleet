@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Fleet" width="600" />
+  <img src="assets/banner.svg" alt="Fleet" width="800" />
 </p>
 
 <h3 align="center">Multi-agent fleet management for <a href="https://openclaw.ai">OpenClaw</a></h3>
@@ -25,13 +25,9 @@
 
 ---
 
-## The Problem
+You're running multiple [OpenClaw](https://openclaw.ai) gateways — a coordinator that thinks, employees that code, review, deploy, and research. Fleet gives your coordinator full operational awareness: which agents are up, which CI is red, what changed since the last check.
 
-You're running multiple [OpenClaw](https://openclaw.ai) gateways — a coordinator that thinks, employees that code, review, deploy, and research. But your coordinator is blind. It can't see which employees are up, which CI is red, or what changed overnight.
-
-**Fleet gives your coordinator eyes.**
-
-## The Solution
+**One command. Full visibility. Delta tracking.**
 
 ```bash
 $ fleet sitrep
@@ -237,8 +233,18 @@ The agent reads the skill file, learns the commands, and runs health checks auto
 
 ## Contributing
 
-Issues and PRs welcome. Built by a solo operation, for solo operations.
+Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Built by a solo operation, for solo operations.
+
+## Support
+
+If Fleet is useful to you, consider supporting its development:
+
+<a href="https://github.com/sponsors/oguzhnatly">
+  <img src="https://img.shields.io/badge/Sponsor-❤️-ea4aaa?style=for-the-badge&logo=github" alt="Sponsor on GitHub" />
+</a>
 
 ## License
 
-[MIT](LICENSE) — Oguzhan Atalay
+[MIT](LICENSE) — [Oguzhan Atalay](https://github.com/oguzhnatly)
