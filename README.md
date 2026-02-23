@@ -28,6 +28,10 @@
 You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator that thinks, employees that code, review, deploy, and research. Fleet gives your coordinator full operational awareness. Which agents are up, which CI is red, what changed since the last check.
 
 <p align="center">
+  <em>Built for AI agents to manage AI agents. Your coordinator reads the skill, runs the commands, and handles the fleet. No human in the loop required.</em>
+</p>
+
+<p align="center">
   <img src="assets/demo.gif" alt="Fleet Demo" width="700" />
 </p>
 
