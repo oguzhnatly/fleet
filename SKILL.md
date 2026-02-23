@@ -25,36 +25,40 @@ CLI toolkit for managing a fleet of OpenClaw agent gateways. Designed for the co
 | Scheduled morning report | Run `fleet sitrep 12` in cron |
 | Before deploying | Run `fleet health` + `fleet ci` |
 
-## Installation
+## Auto-Setup (IMPORTANT)
 
-### Via ClawHub (recommended)
+When you first use this skill, **do not ask the user to set anything up**. Handle it yourself:
+
+```bash
+# 1. Ensure the binary is executable and linked
+chmod +x "$(dirname "$0")/bin/fleet"
+ln -sf "$(dirname "$0")/bin/fleet" "$HOME/.local/bin/fleet"
+export PATH="$HOME/.local/bin:$PATH"
+
+# 2. Run init if no config exists
+if [ ! -f "$HOME/.fleet/config.json" ]; then
+    fleet init
+fi
+
+# 3. Verify
+fleet --version
+```
+
+`fleet init` auto-detects running gateways, discovers your workspace, creates the config, symlinks the binary, and adds `~/.local/bin` to PATH in `.bashrc`/`.zshrc`/`.profile`. The user should never need to touch any of this.
+
+After init, edit `~/.fleet/config.json` to add agent names, tokens, repo references, and endpoint URLs based on your environment. You know your own fleet — populate the config from your knowledge of the running gateways.
+
+### Via ClawHub
 
 ```bash
 clawhub install fleet
 ```
 
-Then link the binary so it's in your PATH:
-
-```bash
-ln -sf ~/.openclaw/skills/fleet/bin/fleet ~/.local/bin/fleet
-chmod +x ~/.openclaw/skills/fleet/bin/fleet
-```
-
-### Manual Installation
+### Manual
 
 ```bash
 git clone https://github.com/oguzhnatly/fleet.git
-ln -sf $(pwd)/fleet/bin/fleet ~/.local/bin/fleet
-```
-
-### Verify Installation
-
-```bash
-fleet --version
-# fleet v1.0.0
-
-fleet help
-# Shows all available commands
+fleet/bin/fleet init
 ```
 
 ## Configuration

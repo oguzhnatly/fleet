@@ -61,6 +61,20 @@ Resources  mem 45% | disk 7%
 
 One command. Full visibility. Delta tracking shows only what changed.
 
+### Why Fleet?
+
+🔍 **Visibility** — Know which agents are up, which CI is red, what changed overnight. One command, full picture.
+
+📊 **Delta tracking** — SITREP remembers the last run. Only shows what _changed_. No noise.
+
+🔧 **Zero config (almost)** — `fleet init` auto-detects running gateways, discovers your workspace, links itself to PATH. One command to go from clone to operational.
+
+🧩 **Modular** — Each command is a separate file. Adding a new command = dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
+
+⚡ **Agent-native** — Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage an entire fleet autonomously.
+
+📦 **Pattern library** — Solo empire, dev team, research lab. Pre-built configs for common setups.
+
 ## Quick Start
 
 ```bash
@@ -69,10 +83,7 @@ clawhub install fleet
 
 # Or clone directly
 git clone https://github.com/oguzhnatly/fleet.git
-ln -sf $(pwd)/fleet/bin/fleet ~/.local/bin/fleet
-
-# Initialize (auto-detects running gateways)
-fleet init
+fleet/bin/fleet init    # auto-links PATH, detects gateways, creates config
 
 # Check your fleet
 fleet agents
@@ -89,6 +100,7 @@ fleet sitrep
 | `fleet health` | Health check all gateways and endpoints |
 | `fleet agents` | Show agent fleet with live status and latency |
 | `fleet sitrep [hours]` | Full SITREP with delta tracking |
+| `fleet audit` | Check for misconfigurations and risks |
 
 ### Development
 
@@ -104,6 +116,85 @@ fleet sitrep
 | `fleet backup` | Backup gateway configs, cron jobs, auth profiles |
 | `fleet restore` | Restore from latest backup |
 | `fleet init` | Interactive setup with auto-detection |
+
+<details>
+<summary><strong>See more command output examples</strong></summary>
+
+#### `fleet agents`
+
+```
+Agent Fleet
+───────────
+  ⬢ coordinator      coordinator      claude-opus-4               :48391 online 13ms
+
+  ⬢ coder            implementation   codex                       :48520 online 8ms
+  ⬢ reviewer         code-review      codex                       :48540 online 9ms
+  ⬡ deployer         deployment       codex                       :48560 unreachable
+  ⬢ qa               quality-assurance codex                      :48580 online 7ms
+```
+
+#### `fleet audit`
+
+```
+Fleet Audit
+───────────
+
+Configuration
+  ✅ Config file exists at ~/.fleet/config.json
+  ✅ Config permissions: 600
+  ✅ All agent tokens configured
+  ✅ No placeholder tokens found
+
+Agents
+  ✅ All 5 agents online
+  ✅ Main gateway healthy (:48391)
+
+CI
+  ✅ gh CLI available
+  ✅ All CI green
+
+Resources
+  ✅ Memory usage: 43%
+  ✅ Disk usage: 7%
+
+Backups
+  ✅ Last backup: 2 day(s) ago
+
+  All clear — 11 checks passed, 0 warnings
+```
+
+#### `fleet ci`
+
+```
+CI Status
+─────────
+
+  frontend (myorg/frontend)
+    ✅ Update homepage (main) passed 2h ago
+    ✅ Fix footer (main) passed 4h ago
+
+  backend (myorg/backend)
+    ❌ Add endpoint (main) failed 1h ago
+    ✅ Fix auth (main) passed 3h ago
+```
+
+#### `fleet health`
+
+```
+Fleet Health Check
+──────────────────
+  ✅ coordinator (:48391) 12ms
+
+Endpoints
+  ✅ website (200) 234ms
+  ✅ api (200) 89ms
+  ❌ docs UNREACHABLE
+
+Services
+  ✅ openclaw-gateway
+```
+
+</details>
 
 ## Patterns
 
