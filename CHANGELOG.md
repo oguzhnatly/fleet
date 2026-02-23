@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Universal compatibility playbook in SKILL.md · agents install deps and adapt to any environment
 - Auto PATH setup in `fleet init` · symlinks to `~/.local/bin`, updates shell rc files
 - bash 4+ version check with macOS-specific install guidance
-- "Why Fleet?" marketing section with 6 value props
+- "Why Fleet?" section with 6 value props
 - Collapsible command output examples in README
 - GitHub Sponsors badge and `FUNDING.yml`
 - Agent-first tagline: "Built for AI agents to manage AI agents"
