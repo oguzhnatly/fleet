@@ -55,6 +55,9 @@ You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator 
 # Install via ClawHub
 clawhub install fleet
 
+# Or via skills.sh (works with Claude Code, Codex, Cursor, Windsurf, and more)
+npx skills add oguzhnatly/fleet
+
 # Or clone directly
 git clone https://github.com/oguzhnatly/fleet.git
 fleet/bin/fleet init    # links PATH, detects gateways, creates config
@@ -282,10 +285,11 @@ Modular by design. Each command is a separate file. Add your own by dropping a `
 
 ## For AI Agents
 
-Fleet ships with a [`SKILL.md`](SKILL.md) that any OpenClaw agent can read. Install via ClawHub and your coordinator automatically knows how to manage the fleet:
+Fleet ships with a [`SKILL.md`](SKILL.md) that any AI coding agent can read. Install it and your coordinator automatically knows how to manage the fleet:
 
 ```bash
-clawhub install fleet
+clawhub install fleet          # OpenClaw agents
+npx skills add oguzhnatly/fleet  # Claude Code, Codex, Cursor, Windsurf, etc.
 ```
 
 The agent reads the skill file, learns the commands, and runs health checks autonomously during heartbeat cycles.
