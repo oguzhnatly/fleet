@@ -308,6 +308,51 @@ The agent reads the skill file, learns the commands, and runs health checks auto
 | [OpenClaw](https://openclaw.ai) | any | Gateway support required |
 | [gh CLI](https://cli.github.com/) | any | Optional, for CI commands |
 
+## Roadmap
+
+Fleet is being built in stages. Each version makes it more active, more intelligent, and more universal.
+
+### v1 · Shipped ✅
+Visibility layer. Monitoring, delta SITREP, CI status, backup, audit. Fleet can see the entire operation.
+
+### v2 · Active (task dispatch and session steering)
+Fleet stops being observational and becomes directive.
+
+- [ ] `fleet task <agent> "<prompt>"` — dispatch a task to any agent from the CLI
+- [ ] `fleet steer <agent> "<message>"` — send a mid-session correction to a running agent
+- [ ] `fleet watch <agent>` — live log tail from a specific agent session
+- [ ] `fleet parallel "<task>"` — describe a high-level task, fleet breaks it into subtasks, assigns to the right agents, runs in parallel
+- [ ] `fleet log` — append-only structured log of everything dispatched and received
+- [ ] `fleet kill <agent>` — graceful session end
+
+### v3 · Planned (reliability scoring and agent trust)
+Fleet learns which agents actually deliver, not just which ones are alive.
+
+- [ ] `fleet trust` — trust matrix for all agents: delivery rate, rejection rate, consistency, trend
+- [ ] `fleet score <agent>` — detailed PDR breakdown with failure patterns and trajectory
+- [ ] Reliability-weighted task routing for `fleet parallel` (dispatch to best agent for task type, not just whoever is idle)
+- [ ] Trend scoring: an agent at 30% reject rate trending down ranks higher than one at 10% trending flat
+
+PDR (Provenance-Driven Reputation): `delivered / dispatched * time_modifier`. Built on observable behavior from the fleet log, not self-reported health.
+
+### v4 · Planned (cross-runtime adapter layer)
+Fleet works with any agent on any runtime, not just OpenClaw.
+
+- [ ] Standardized adapter interface: OpenClaw, Claude Code, Codex, generic HTTP, Docker
+- [ ] `fleet adapters` — list registered adapters and their status
+- [ ] `fleet runtime add <name> <type>` — register a new runtime without editing config manually
+- [ ] Backward compatible: existing configs default to OpenClaw adapter
+
+### v5 · Planned (server mode and HTTP API)
+Fleet becomes an embeddable data source, not just a CLI.
+
+- [ ] `fleet serve` — start fleet as a local HTTP server
+- [ ] REST API: `/agents`, `/sitrep`, `/trust`, `/log`, `/task`, `/steer`
+- [ ] External tools, dashboards, and CI systems can consume fleet data
+- [ ] Foundation for a future cloud sync tier
+
+---
+
 ## Contributing
 
 Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
