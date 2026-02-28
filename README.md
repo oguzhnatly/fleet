@@ -55,6 +55,21 @@ See what changed. Dispatch tasks. Learn which agents actually deliver, and route
 
 📦 **Pattern library** · Solo empire, dev team, research lab. Pre built configs for common setups.
 
+## Contents
+
+- [Why Fleet?](#why-fleet)
+- [Quick Start](#quick-start)
+- [Commands](#commands)
+- [Patterns](#patterns)
+- [Configuration](#configuration)
+- [Environment Variables](#environment-variables)
+- [Architecture](#architecture)
+- [For AI Agents](#for-ai-agents)
+- [Requirements](#requirements)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Support](#support)
+
 ## Quick Start
 
 ```bash
