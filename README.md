@@ -335,38 +335,43 @@ Visibility layer. Monitoring, delta SITREP, CI status, backup, audit. Fleet can 
 ### v2 · Active (task dispatch and session steering)
 Fleet stops being observational and becomes directive.
 
-- [ ] `fleet task <agent> "<prompt>"` — dispatch a task to any agent from the CLI
-- [ ] `fleet steer <agent> "<message>"` — send a mid-session correction to a running agent
+- [ ] `fleet log` — append-only structured log of everything dispatched and received (built first, foundation for everything else)
+- [ ] `fleet task <agent> "<prompt>"` — dispatch a task to any agent from the CLI, with timeout and result capture
 - [ ] `fleet watch <agent>` — live log tail from a specific agent session
-- [ ] `fleet parallel "<task>"` — describe a high-level task, fleet breaks it into subtasks, assigns to the right agents, runs in parallel
-- [ ] `fleet log` — append-only structured log of everything dispatched and received
+- [ ] `fleet steer <agent> "<message>"` — send a mid-session correction to a running agent
 - [ ] `fleet kill <agent>` — graceful session end
+- [ ] `fleet parallel "<task>"` — break a high-level task into subtasks, assign to agents, run in parallel (with `--dry-run` to review decomposition before executing)
 
 ### v3 · Planned (reliability scoring and agent trust)
 Fleet learns which agents actually deliver, not just which ones are alive.
 
-- [ ] `fleet trust` — trust matrix for all agents: delivery rate, rejection rate, consistency, trend
-- [ ] `fleet score <agent>` — detailed PDR breakdown with failure patterns and trajectory
-- [ ] Reliability-weighted task routing for `fleet parallel` (dispatch to best agent for task type, not just whoever is idle)
-- [ ] Trend scoring: an agent at 30% reject rate trending down ranks higher than one at 10% trending flat
-
-PDR (Provenance-Driven Reputation): `delivered / dispatched * time_modifier`. Built on observable behavior from the fleet log, not self-reported health.
+- [ ] `fleet trust` — trust matrix for all agents with scores, trends, and task counts
+- [ ] `fleet score <agent>` — per-task-type reliability breakdown: code, review, research, deploy, qa
+- [ ] Reliability formula: `completion_rate × quality_rate × speed_score` — all three multiply, an agent cannot hide poor quality behind high volume
+- [ ] 48-72 hour rolling window — recent behavior weighted over historical, score recovers fast when issues are fixed
+- [ ] Reliability-weighted routing for `fleet parallel` — dispatch to best agent per task type, not just whoever is idle (upgrade point from v2)
+- [ ] Trust summary line appended to every `fleet sitrep` output
+- [ ] v3.5: two-source cross-validation — fleet log (internal) vs GitHub commits (external), flags divergence
 
 ### v4 · Planned (cross-runtime adapter layer)
 Fleet works with any agent on any runtime, not just OpenClaw.
 
-- [ ] Standardized adapter interface: OpenClaw, Claude Code, Codex, generic HTTP, Docker
-- [ ] `fleet adapters` — list registered adapters and their status
+- [ ] Pluggable adapter interface: three-function contract (health, info, version) every runtime implements
+- [ ] Built-in adapters: OpenClaw (verified), HTTP (any /health endpoint), Docker (container status), Process (inferred, labeled as such)
+- [ ] `fleet adapters` — list registered adapters, status, and whether health is verified or inferred
 - [ ] `fleet runtime add <name> <type>` — register a new runtime without editing config manually
-- [ ] Backward compatible: existing configs default to OpenClaw adapter
+- [ ] `fleet runtime test <name>` — one-off health check against a named adapter for debugging
+- [ ] Backward compatible: existing configs default to OpenClaw adapter, zero migration needed
 
 ### v5 · Planned (server mode and HTTP API)
 Fleet becomes an embeddable data source, not just a CLI.
 
-- [ ] `fleet serve` — start fleet as a local HTTP server
-- [ ] REST API: `/agents`, `/sitrep`, `/trust`, `/log`, `/task`, `/steer`
-- [ ] External tools, dashboards, and CI systems can consume fleet data
-- [ ] Foundation for a future cloud sync tier
+- [ ] `fleet serve` — start fleet as a local HTTP server (localhost only by default)
+- [ ] `fleet status` — show if server is running, on what port, and uptime
+- [ ] REST API: `GET /agents`, `/sitrep`, `/trust`, `/log`, `/ci` and `POST /task`, `/steer`
+- [ ] All responses are structured JSON with stable field names
+- [ ] External tools, dashboards, and CI pipelines can consume fleet data without shelling out
+- [ ] Foundation for a future cloud sync tier (local free, cloud paid)
 
 ---
 
