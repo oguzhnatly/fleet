@@ -84,18 +84,15 @@ cmd_watch() {
     fi
 
     # ── Determine which session to watch ──────────────────────────────────
-    # Coordinator: main session at agent:main:main
-    # Employees: fleet session first (agent:main:fleet-<agent>), fall back to main
-    if [ "$role" = "coordinator" ]; then
+    # Coordinator: always agent:main:main
+    # Employees: fleet session (agent:main:fleet-<agent>) by default
+    #            --all: override to full main session (agent:main:main)
+    if [ "$role" = "coordinator" ] || [ "$show_all" = "true" ]; then
         session_key="agent:main:main"
         jsonl_path="$(_resolve_session_jsonl "$profile_dir" "$session_key")"
     else
         session_key="agent:main:fleet-${agent}"
         jsonl_path="$(_resolve_session_jsonl "$profile_dir" "$session_key")"
-        if [ -z "$jsonl_path" ] && [ "$show_all" = "true" ]; then
-            session_key="agent:main:main"
-            jsonl_path="$(_resolve_session_jsonl "$profile_dir" "$session_key")"
-        fi
     fi
 
     out_header "Watching $agent"

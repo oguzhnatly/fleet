@@ -4,7 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.x.x   | ✅ Current |
+| 2.x.x   | ✅ Current |
+| 1.x.x   | ❌ End of life |
 
 ## Reporting a Vulnerability
 
@@ -35,17 +36,28 @@ Fleet is a CLI tool that runs locally and interacts with:
 
 ### Tokens and Credentials
 
-Fleet **never stores credentials itself**. It reads:
-- API keys from environment variables (never from config files)
-- Agent tokens from `~/.fleet/config.json` (local file, user-controlled)
+Fleet reads:
+- Agent gateway tokens from `~/.fleet/config.json` under `agents[].token` and `gateway.token`
 - GitHub auth from `gh` CLI's existing session
+
+Tokens are used for:
+- Authenticating HTTP requests to OpenClaw agent gateways (`Authorization: Bearer <token>`)
+- Routing dispatch sessions via `x-openclaw-session-key` header
+
+### Session File Access (v2+)
+
+`fleet watch` reads session transcript files directly from the OpenClaw profile directories:
+- Coordinator: `~/.openclaw/agents/main/sessions/`
+- Employees: `~/.openclaw-{agent}/agents/main/sessions/`
+
+These files contain full conversation transcripts. Ensure profile directories are not readable by other users.
 
 ### Best Practices
 
-- Keep `~/.fleet/config.json` readable only by your user (`chmod 600`)
-- Use environment variables for API keys, not config files
-- Rotate agent tokens periodically
-- Review the config before sharing it (tokens may be present)
+- Keep `~/.fleet/config.json` readable only by your user: `chmod 600 ~/.fleet/config.json`
+- Keep OpenClaw profile directories private: `chmod 700 ~/.openclaw ~/.openclaw-*`
+- Rotate agent tokens periodically and update `~/.fleet/config.json` accordingly
+- Review the config before sharing it (tokens are stored in plaintext)
 
 ## Scope
 

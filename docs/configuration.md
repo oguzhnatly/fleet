@@ -10,8 +10,9 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
   "gateway": {
     "port": "number · main gateway port (default: 48391)",
     "name": "string · display name for the coordinator",
-    "role": "string · role description",
-    "model": "string · model identifier"
+    "role": "string · role description (use 'coordinator' for the main agent)",
+    "model": "string · model identifier",
+    "token": "string · auth token for HTTP API calls to coordinator (required for fleet watch coordinator)"
   },
   "agents": [
     {
@@ -52,6 +53,7 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `FLEET_CONFIG` | Path to config file | `~/.fleet/config.json` |
+| `FLEET_LOG` | Path to dispatch log file | `~/.fleet/log.jsonl` |
 | `FLEET_WORKSPACE` | Override workspace path | Config value |
 | `FLEET_STATE_DIR` | State persistence directory | `~/.fleet/state` |
 | `NO_COLOR` | Disable colored output | (unset) |

@@ -1,30 +1,37 @@
 ---
 name: fleet
-description: "Monitor, manage, and orchestrate a fleet of OpenClaw agent gateways. Health checks, SITREP reports with delta tracking, CI status, config backups, and audit."
-triggers: "check agents, fleet status, run sitrep, health check, backup config, show agents, fleet report, how many agents online, CI status, what skills installed"
+description: "Monitor, manage, dispatch to, and orchestrate a fleet of OpenClaw agent gateways. Task dispatch with live streaming, session steering, parallel execution, dispatch log, and observability."
+triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed"
 ---
 
 # Fleet · Multi-Agent Fleet Management
 
-CLI toolkit for managing a fleet of OpenClaw agent gateways. Designed for the coordinator agent to monitor and manage employee agents, track CI, run status reports, and maintain operational awareness.
+CLI toolkit for managing, dispatching to, and observing a fleet of OpenClaw agent gateways. The coordinator agent uses fleet to monitor employees, dispatch tasks, steer running sessions, watch live output, and review dispatch history.
 
 ## Quick Reference
 
 | Situation | Action |
 |-----------|--------|
-| Check if all agents are alive | Run `fleet agents` |
-| Something feels wrong, need full picture | Run `fleet sitrep` |
-| Quick health check | Run `fleet health` |
-| Check CI across all repos | Run `fleet ci` |
-| Check CI for specific repo | Run `fleet ci <name>` |
-| See what skills are installed | Run `fleet skills` |
-| Backup everything before a change | Run `fleet backup` |
-| Restore after something broke | Run `fleet restore` |
-| First time setup | Run `fleet init` |
-| User asks "how's the fleet?" | Run `fleet agents`, summarize |
-| User asks "what changed?" | Run `fleet sitrep`, report deltas |
-| Scheduled morning report | Run `fleet sitrep 12` in cron |
-| Before deploying | Run `fleet health` + `fleet ci` |
+| Send a task to an agent | `fleet task coder "add pagination to /api/spots"` |
+| Watch what an agent is doing | `fleet watch coder` |
+| Watch what the coordinator is doing | `fleet watch coordinator` |
+| Send a mid-task correction | `fleet steer coder "also add rate limiting"` |
+| Stop an agent's current task | `fleet kill coder` |
+| See all recent dispatches and outcomes | `fleet log` |
+| Decompose a task across multiple agents | `fleet parallel "<task>" --dry-run` (plan first) |
+| Check if all agents are alive | `fleet agents` |
+| Something feels wrong, need full picture | `fleet sitrep` |
+| Quick health check | `fleet health` |
+| Check CI across all repos | `fleet ci` |
+| Check CI for specific repo | `fleet ci <name>` |
+| See what skills are installed | `fleet skills` |
+| Backup everything before a change | `fleet backup` |
+| Restore after something broke | `fleet restore` |
+| First time setup | `fleet init` |
+| User asks "how's the fleet?" | `fleet agents`, summarize |
+| User asks "what changed?" | `fleet sitrep`, report deltas |
+| Scheduled morning report | `fleet sitrep 12` in cron |
+| Before deploying | `fleet health` + `fleet ci` |
 
 ## Auto-Setup (IMPORTANT)
 
@@ -143,6 +150,123 @@ Create `~/.fleet/config.json`:
 | `NO_COLOR` | Disable colored output when set | (unset) |
 
 ## Commands · Detailed Reference
+
+### `fleet task <agent> "<prompt>"`
+
+Dispatches a task to a named agent and streams the response live.
+
+**Requires:** Agent token in `~/.fleet/config.json` under `agents[].token`.
+
+**Options:**
+- `--type code|review|research|deploy|qa` — override task type (auto-inferred from prompt if omitted)
+- `--timeout <minutes>` — response timeout (default: 30)
+- `--no-wait` — fire and forget, return immediately
+
+**Output:**
+```
+Fleet Task
+──────────
+  Agent     coder (port 48520)
+  Type      code
+  Task ID   a1b2c3d4
+  Timeout   30m
+
+  add pagination to /api/spots endpoint
+
+  ────────────────────────────────────────
+  [streams response in real time]
+  ────────────────────────────────────────
+  ✅  Task complete  (a1b2c3d4)
+```
+
+**Important:** Task dispatch uses `x-openclaw-session-key: fleet-{agent}` header. All tasks to the same agent share a session, so the agent has context of prior tasks.
+
+### `fleet steer <agent> "<message>"`
+
+Sends a mid-session correction to an agent that is currently working on a task. Routes to the same session as `fleet task`, so the agent has full context.
+
+**Output:**
+```
+Fleet Steer
+───────────
+  Agent    coder
+  Session  fleet-coder
+
+  ────────────────────────────────────────
+  [agent response to correction]
+  ────────────────────────────────────────
+  ✅  Steered.
+```
+
+### `fleet watch <agent> [--all]`
+
+Live session tail. Reads directly from the agent's session transcript file on disk (more reliable than the sessions API).
+
+- Default: watches `fleet-{agent}` session (tasks dispatched via `fleet task`)
+- `--all`: watches agent's full main session history
+- `coordinator`: always watches the main coordinator session
+
+**Output:**
+```
+Watching coder
+──────────────
+  Session: agent:main:fleet-coder
+  File: b80eb2e5.jsonl · polling every 3s · Ctrl+C to stop
+
+  Last 2 message(s):
+
+  you             16:37 UTC
+  add pagination to /api/spots
+
+  coder           16:37 UTC
+  Starting with the cursor-based approach...
+```
+
+**Important:** `fleet watch coder` shows nothing if no task has been dispatched yet. Run `fleet task coder "<prompt>"` first to create the fleet session. Use `fleet watch coder --all` to see the agent's full history.
+
+### `fleet kill <agent> [--force]`
+
+Sends a graceful stop signal to the agent's fleet session. The agent acknowledges and archives the session. Marks all pending log entries for that agent as `steered`.
+
+### `fleet parallel "<task>" [--dry-run]`
+
+Decomposes a high-level task into subtasks by type, assigns each to the right agent, and dispatches all concurrently.
+
+**Always use `--dry-run` first** to review the decomposition plan before executing. Requires confirmation before actual dispatch.
+
+**Output with `--dry-run`:**
+```
+Fleet Parallel
+──────────────
+  Task: research competitor pricing and build a pricing page
+
+  Execution plan:
+
+  1. researcher    [research]
+     Research phase: ...
+
+  2. coder         [code]
+     Implementation: ...
+
+  ────────────────────────────────────────
+  2 subtask(s) ready to dispatch in parallel.
+
+  ℹ️  Dry run complete. Remove --dry-run to execute.
+```
+
+### `fleet log [--agent <name>] [--outcome <status>] [--limit <n>] [--all]`
+
+Shows the dispatch history for all fleet tasks. Filterable by agent, outcome, and count.
+
+**Outcomes:** `success`, `failure`, `timeout`, `steered`, `pending`
+
+**Output:**
+```
+Fleet Log  3 entries
+
+  a1b2c3d4  coder        code      success  12m17s
+  2026-03-01 15:10  add pagination to /api/spots...
+```
 
 ### `fleet health`
 
