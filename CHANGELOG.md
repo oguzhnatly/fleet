@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] · 2026-03-01
+
+### Changed
+- `_meta.json`: version bumped to 2.0.0, added `permissions` block (reads/writes/network/never), `envVars` listing, `install` spec with consent statement, `sensitive` section, and accurate `requires` with version constraints. Resolves registry metadata mismatch.
+- `SKILL.md`: added "Intent, Authorization, and Trust" section, "Security Model" section with full network/filesystem/credential/privilege scope, inline red lines on every autonomous behavior, explicit opt-out path for shell rc modification, and PATH idempotency check before writing to rc files
+
+---
+
 ## [2.0.0] · 2026-03-01
 
 ### Added

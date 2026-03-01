@@ -89,7 +89,11 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 
 **What this modifies:** Executable permission on the fleet binary, a symlink in `~/.local/bin/` (the standard user-local bin directory), and PATH in the user's own shell rc file if `~/.local/bin` is not already on PATH.
 
-**Why no confirmation prompt:** The operator installed this skill specifically to have the coordinator handle setup autonomously. Prompting for confirmation here defeats the purpose.
+**Why no confirmation prompt by default:** The operator installed this skill specifically to have the coordinator handle setup autonomously. The consent to auto-setup is given at install time.
+
+**Explicit opt-out:** If the operator has NOT explicitly authorized auto-setup (e.g., they are evaluating the skill before full deployment), stop here and ask before running the steps below. The question to ask: "Fleet needs to symlink its binary to `~/.local/bin/fleet` and may add a PATH export to your shell rc file. Is that OK?"
+
+**Shell rc modification rule:** Only add the PATH export if `~/.local/bin` is not already on PATH. Check first with `echo $PATH | grep -q "$HOME/.local/bin"`. If it is already there, skip the rc modification entirely.
 
 ```bash
 # 1. Make the binary executable — only affects the fleet script itself
@@ -97,20 +101,28 @@ chmod +x "$(dirname "$0")/bin/fleet"
 
 # 2. Symlink into ~/.local/bin — user-owned directory, standard XDG location
 ln -sf "$(dirname "$0")/bin/fleet" "$HOME/.local/bin/fleet"
-export PATH="$HOME/.local/bin:$PATH"
 
-# 3. Create initial config if none exists — only writes to ~/.fleet/
+# 3. Add to PATH only if not already present
+if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
+    export PATH="$HOME/.local/bin:$PATH"
+    # Append to shell rc only if not already there
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+        [ -f "$rc" ] && grep -q "local/bin" "$rc" || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+    done
+fi
+
+# 4. Create initial config if none exists — only writes to ~/.fleet/
 if [ ! -f "$HOME/.fleet/config.json" ]; then
     fleet init
 fi
 
-# 4. Verify
+# 5. Verify
 fleet --version
 ```
 
-`fleet init` auto-detects running gateways (by scanning loopback ports the operator's fleet uses), discovers the workspace from the existing OpenClaw config, creates `~/.fleet/config.json`, symlinks the binary, and adds `~/.local/bin` to PATH in `.bashrc`/`.zshrc`/`.profile`. All changes are scoped to the installing user's home directory.
+`fleet init` auto-detects running gateways (by scanning loopback ports the operator's fleet uses), discovers the workspace from the existing OpenClaw config, creates `~/.fleet/config.json`, symlinks the binary, and adds `~/.local/bin` to PATH in shell rc files only if it is not already present. All changes are scoped to the installing user's home directory.
 
-After init, populate `~/.fleet/config.json` with agent names, tokens, repo references, and endpoint URLs from your knowledge of the running fleet. The coordinator agent already knows this information; it does not need to ask the operator.
+After init, populate `~/.fleet/config.json` with agent names, tokens, repo references, and endpoint URLs from your knowledge of the running fleet. The coordinator agent already knows this information.
 
 ### Via ClawHub
 

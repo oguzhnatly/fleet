@@ -1,9 +1,62 @@
 {
   "slug": "fleet",
-  "version": "1.1.0",
+  "version": "2.0.0",
+  "description": "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install.",
   "requires": {
     "binaries": ["bash", "python3", "curl"],
-    "optionalBinaries": ["gh"]
+    "optionalBinaries": ["gh"],
+    "bashVersion": "4.0",
+    "pythonVersion": "3.10"
   },
-  "description": "Multi-agent fleet management CLI for OpenClaw"
+  "envVars": {
+    "optional": [
+      { "name": "FLEET_CONFIG",    "description": "Override path to fleet config file (default: ~/.fleet/config.json)" },
+      { "name": "FLEET_LOG",       "description": "Override path to dispatch log file (default: ~/.fleet/log.jsonl)" },
+      { "name": "FLEET_WORKSPACE", "description": "Override workspace path (default: value from config)" },
+      { "name": "FLEET_STATE_DIR", "description": "Override state persistence directory (default: ~/.fleet/state)" },
+      { "name": "NO_COLOR",        "description": "Disable colored terminal output when set to any value" }
+    ]
+  },
+  "permissions": {
+    "reads": [
+      "~/.fleet/config.json (agent tokens, fleet config — created by fleet itself)",
+      "~/.fleet/state/ (delta tracking state — created by fleet itself)",
+      "~/.openclaw*/agents/main/sessions/*.jsonl (session transcripts — for fleet watch command only, on operator's own agents)",
+      "~/.openclaw*/openclaw.json (gateway config — read-only, for auto-detection during fleet init only)",
+      "/proc/meminfo (memory usage — for fleet sitrep resource section only, Linux only)"
+    ],
+    "writes": [
+      "~/.fleet/ (config, state, logs, backups — all created by fleet itself)",
+      "~/.local/bin/fleet (symlink to fleet binary — created by fleet init, standard XDG location)",
+      "~/.bashrc | ~/.zshrc | ~/.profile (append PATH export only, only if ~/.local/bin not already on PATH)"
+    ],
+    "network": [
+      "127.0.0.1:<agent-ports> (loopback only — operator's own agent gateways listed in config)",
+      "api.github.com (CI status reads via authenticated gh CLI — for fleet ci command only, using operator's own session)",
+      "Operator-configured endpoint URLs (health checks only — URLs the operator explicitly added to config)"
+    ],
+    "never": [
+      "No connections to any address not in operator's own config",
+      "No reading of SSH keys, cloud credentials, browser storage, or OS keychain",
+      "No writing outside the installing user's home directory",
+      "No sudo or elevated privilege execution",
+      "No listening ports or inbound connections",
+      "No transmitting tokens or credentials outside loopback"
+    ]
+  },
+  "install": {
+    "method": "manual",
+    "steps": [
+      "git clone https://github.com/oguzhnatly/fleet.git",
+      "fleet/bin/fleet init"
+    ],
+    "clawhub": "clawhub install fleet",
+    "initBehavior": "fleet init scans loopback ports for running gateways, reads ~/.openclaw/openclaw.json for workspace path, creates ~/.fleet/config.json, symlinks binary to ~/.local/bin/fleet, and appends PATH export to shell rc file if needed",
+    "consent": "Installing this skill is the operator's explicit consent to the init behavior described above. If you do not want automatic writes to your home directory or shell rc modification, clone the repo and configure ~/.fleet/config.json manually without running fleet init."
+  },
+  "always": false,
+  "sensitive": {
+    "storedPlaintext": ["~/.fleet/config.json (agent gateway auth tokens)"],
+    "hardening": "chmod 600 ~/.fleet/config.json and chmod 700 ~/.openclaw ~/.openclaw-* as documented in SECURITY.md"
+  }
 }
