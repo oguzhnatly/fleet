@@ -3,8 +3,9 @@
 # Reads ~/.fleet/config.json (or $FLEET_CONFIG) and provides accessor functions.
 
 # shellcheck disable=SC2034
-FLEET_VERSION="1.1.0"
+FLEET_VERSION="2.0.0"
 FLEET_CONFIG_PATH="${FLEET_CONFIG:-$HOME/.fleet/config.json}"
+FLEET_LOG_FILE="${FLEET_LOG:-$HOME/.fleet/log.jsonl}"
 
 # ── JSON helper (portable, no jq dependency) ────────────────────────────────
 _json_get() {

@@ -46,6 +46,14 @@ cmd_help() {
 
   ⛵ fleet — Multi-agent fleet management for OpenClaw
 
+  DISPATCH
+    fleet task <agent> "<prompt>"     Dispatch a task to an agent
+    fleet steer <agent> "<message>"   Send mid-session correction
+    fleet watch <agent>               Live session tail
+    fleet parallel "<task>"           Decompose and dispatch in parallel
+    fleet kill <agent>                Send graceful stop signal
+    fleet log [--agent X] [--limit N] View dispatch history
+
   MONITORING
     fleet health              Health check all gateways and endpoints
     fleet agents              Show all agent gateways with status
@@ -76,6 +84,12 @@ HELP
 
 # ── Route ───────────────────────────────────────────────────────────────────
 case "${1:-help}" in
+    task)                cmd_task "${@:2}" ;;
+    steer)               cmd_steer "${@:2}" ;;
+    watch)               cmd_watch "${@:2}" ;;
+    parallel)            cmd_parallel "${@:2}" ;;
+    kill)                cmd_kill "${@:2}" ;;
+    log)                 cmd_log "${@:2}" ;;
     health)              cmd_health ;;
     agents|employees)    cmd_agents ;;
     sitrep|status)       cmd_sitrep "${2:-4}" ;;
