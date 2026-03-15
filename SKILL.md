@@ -2,8 +2,51 @@
 name: fleet
 type: installable-cli
 install: "clawhub install fleet"
-description: "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install."
+description: "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local or to explicitly listed endpoints. Operator consent is required before install."
 triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed, trust score, which agent is reliable, fleet trust, fleet score, agent reliability, who should I assign, best agent for task"
+requires:
+  binaries: ["bash>=4.0", "python3>=3.10", "curl"]
+  optionalBinaries: ["gh"]
+envVars:
+  optional:
+    - name: FLEET_CONFIG
+      description: "Override path to fleet config (default: ~/.fleet/config.json)"
+    - name: FLEET_LOG
+      description: "Override path to dispatch log (default: ~/.fleet/log.jsonl)"
+    - name: FLEET_STATE_DIR
+      description: "Override state directory (default: ~/.fleet/state)"
+    - name: FLEET_TRUST_WINDOW_HOURS
+      description: "Override trust scoring window in hours (default: 72)"
+    - name: NO_COLOR
+      description: "Disable colored output when set"
+permissions:
+  reads:
+    - "~/.fleet/ (config, state, logs created by fleet itself)"
+    - "~/.openclaw/openclaw.json (read-only, only during fleet init auto-detection of workspace path)"
+    - "~/.openclaw*/agents/*/sessions/<fleet-session-id>.jsonl (fleet watch: reads only the session file fleet itself created for the named agent)"
+    - "/proc/meminfo (Linux only, fleet sitrep resource section)"
+  writes:
+    - "~/.fleet/ (config, state, logs, backups)"
+    - "~/.local/bin/fleet (symlink, created by fleet init)"
+    - "~/.bashrc or ~/.zshrc or ~/.profile (append PATH export only if ~/.local/bin not already present)"
+  network:
+    - "127.0.0.1:<agent-ports> (loopback only, operator-configured agent gateways)"
+    - "api.github.com/repos/<operator-repos>/actions/runs (fleet ci, via operator gh CLI auth)"
+    - "api.github.com/repos/oguzhnatly/fleet/releases/latest (fleet update background check, once per 24h, non-blocking)"
+    - "Operator-configured endpoint URLs (fleet health checks only)"
+sensitive:
+  storedPlaintext:
+    - "~/.fleet/config.json contains agent gateway auth tokens in plaintext"
+  hardening: "chmod 600 ~/.fleet/config.json recommended. Documented in SECURITY.md."
+installBehavior:
+  writes:
+    - "~/.fleet/config.json (created on first fleet init, contains agent ports and tokens)"
+    - "~/.local/bin/fleet (symlink to binary)"
+    - "~/.bashrc / ~/.zshrc / ~/.profile (PATH export appended if needed)"
+  reads:
+    - "~/.openclaw/openclaw.json (one-time read to detect workspace path, not stored)"
+    - "Loopback ports 40000-50000 (scanned once during init to discover running gateways)"
+  consent: "Running fleet init is the operator's explicit consent to the writes above. Manual setup (clone + edit ~/.fleet/config.json) skips all automatic writes."
 ---
 
 # Fleet: Multi-Agent Fleet Management
@@ -12,14 +55,14 @@ triggers: "check agents, fleet status, run sitrep, health check, dispatch task, 
 
 **Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator (a human who set up and runs the OpenClaw fleet). The operator installed this skill intentionally, knowing it enables autonomous fleet management.
 
-**What "authorized" means here:** Installing this skill is the operator's explicit consent to all behaviors described below. The skill does not contact unknown external services, does not escalate privileges beyond the installing user's own home directory, and does not take any action outside the local fleet the operator already controls.
+**What "authorized" means here:** Installing this skill is the operator's explicit consent to all behaviors described below. The skill contacts only the operator's own agent gateways (loopback), the operator's own GitHub repos via their authenticated gh CLI, and api.github.com for fleet's own release updates (documented, non-blocking, once per 24h). It does not escalate privileges beyond the installing user's home directory and does not take any action outside the local fleet the operator already controls.
 
 **Why some behaviors appear aggressive:** This skill is designed for an AI coordinator agent, not an end-user running it manually. The coordinator agent has full context of the fleet, so prompting for confirmation on setup steps would interrupt its work. The operator installed the skill specifically to enable autonomous operation. Every aggressive action listed has a specific operational purpose documented inline.
 
 **What this skill never does (hard limits):**
 - Never installs software that requires root or sudo without explicit operator instruction
 - Never modifies files outside `~/.fleet/`, `~/.local/bin/`, and the shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`) of the installing user
-- Never contacts external services or sends data outside the local machine except to the operator's own configured endpoints and GitHub repos
+- Never contacts external services except: (1) operator-configured agent gateways on loopback, (2) operator-configured endpoint URLs for health checks, (3) operator's GitHub repos via their authenticated gh CLI for CI status, (4) api.github.com/repos/oguzhnatly/fleet/releases/latest for background update checks (documented, non-blocking, once per 24h, disable by setting FLEET_NO_UPDATE_CHECK=1)
 - Never exfiltrates configuration, tokens, or session data
 - Never modifies OpenClaw configuration without an explicit operator instruction
 - Never runs on systems it was not installed on by an operator
@@ -49,12 +92,12 @@ Fleet reads and writes only:
 - `~/.fleet/`: fleet config, state, logs, backups (all created by fleet itself)
 - `~/.local/bin/fleet`: a symlink to the fleet binary (created by `fleet init`, standard XDG location)
 - Shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`): only to append `export PATH="$HOME/.local/bin:$PATH"` if not already present
-- Session output for `fleet watch`: reads only the specific session file that fleet itself created for the named agent (`fleet-<agent>` session key). Never reads other sessions, other users, or any session data outside fleet-named dispatches.
+- Session output for `fleet watch`: reads the specific session file fleet itself created for the named agent under `~/.openclaw*/agents/*/sessions/<fleet-session-id>.jsonl`. This file may contain conversation transcript data from that agent session. Fleet never reads sessions it did not create, other users' sessions, or the coordinator's main session (unless `--all` flag is explicitly passed).
 
-Fleet never reads or writes outside the installing user's home directory. Fleet never accesses sessions it did not create. Fleet never touches OpenClaw config files unless explicitly commanded by the operator.
+Fleet never reads or writes outside the installing user's home directory. Fleet never accesses sessions it did not create. Fleet reads `~/.openclaw/openclaw.json` once during `fleet init` to auto-detect the workspace path (read-only, never written). Fleet never modifies OpenClaw config files.
 
 ### Credential scope
-Fleet reads auth tokens from `~/.fleet/config.json` only. These tokens belong to the operator's own agents. Fleet never transmits them outside loopback. Fleet never reads other credential stores (ssh keys, cloud credentials, browser storage, OS keychain).
+Fleet reads auth tokens from `~/.fleet/config.json` only. These tokens belong to the operator's own agents and are stored in plaintext in that file. Fleet never transmits them outside loopback. Fleet never reads other credential stores (ssh keys, cloud credentials, browser storage, OS keychain). Recommended hardening: `chmod 600 ~/.fleet/config.json`.
 
 ### Privilege scope
 Fleet never calls `sudo`. Fleet never requests elevated permissions. All install commands that require system-level package managers (e.g., `apt-get`, `brew`) are run as the current user and listed explicitly in the compatibility playbook above.

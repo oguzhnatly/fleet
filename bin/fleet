@@ -93,7 +93,8 @@ BGPY
 _fleet_cmd="${1:-help}"
 if [[ "$_fleet_cmd" != "update" && "$_fleet_cmd" != "--version" &&
       "$_fleet_cmd" != "-v"      && "$_fleet_cmd" != "help"       &&
-      "$_fleet_cmd" != "--help"  && "$_fleet_cmd" != "-h" ]]; then
+      "$_fleet_cmd" != "--help"  && "$_fleet_cmd" != "-h" ]] &&
+   [[ -z "${FLEET_NO_UPDATE_CHECK:-}" ]]; then
     _fleet_bg_version_check
     fleet_update_banner 2>/dev/null || true
 fi

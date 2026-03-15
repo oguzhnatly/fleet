@@ -36,6 +36,10 @@
       {
         "name": "NO_COLOR",
         "description": "Disable colored terminal output when set to any value"
+      },
+      {
+        "name": "FLEET_NO_UPDATE_CHECK",
+        "description": "Set to any value to disable the background GitHub release check and update banner"
       }
     ]
   },
