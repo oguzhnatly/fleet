@@ -51,7 +51,7 @@ See what changed. Dispatch tasks. Learn which agents actually deliver, and route
 
 🧩 **Modular**: Each command is a separate file. Adding a new command means dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
 
-⚡ **Agent native**: Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage a fleet autonomously, install dependencies, and adapt to any environment. If bash isn't available, your agent figures out another way.
+⚡ **Agent native**: Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage a fleet autonomously. Explicit dependency installation steps are provided for every supported platform (bash 4+, python3 3.10+, curl).
 
 📦 **Pattern library**: Solo empire, dev team, research lab. Pre built configs for common setups.
 

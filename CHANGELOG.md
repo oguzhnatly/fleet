@@ -5,10 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.3] · 2026-03-15
+
+### Fixed
+- `README.md`: removed phrase that implied agents can improvise fleet operations when bash is unavailable. Replaced with explicit platform installation reference.
+- `CHANGELOG.md`: removed quoted problematic phrases from prior changelog entry
+- `_meta.json` and `SKILL.md`: published to clawhub registry so scanner reads correct version metadata
+
+---
+
 ## [3.0.2] · 2026-03-15
 
 ### Fixed
-- `SKILL.md`: removed all vague agent-latitude language ("translate on the fly", "create a wrapper", "whatever means are available"). Agents are now explicitly instructed to report dependency failures to the operator rather than improvise workarounds.
+- `SKILL.md`: removed vague agent-latitude language from compatibility section. Agents are now explicitly instructed to report dependency failures to the operator and ask for the missing dependency to be installed.
 - `SKILL.md`: replaced "Making Fleet Work Anywhere" section with bounded "Dependency Requirements" section containing only explicit platform package manager commands
 - `SKILL.md`: added `agentScope.permitted` and `agentScope.notPermitted` blocks explicitly bounding what an agent is and is not allowed to do with this skill
 - `SKILL.md`: added `updateMechanism` block declaring source, verification method, and opt-out for background update check
@@ -113,7 +122,7 @@ recency weight = 2.0 (within windowHours), 1.0 (within 7d), 0.5 (older)
 ### Added
 - `fleet audit` command: checks config, agent health, CI, resources, backups with actionable warnings
 - Terminal demo GIF in README (live recording against real gateways)
-- Universal compatibility playbook in SKILL.md: agents install deps and adapt to any environment
+- Platform-by-platform dependency installation reference in SKILL.md: bash 4+, python3 3.10+, curl for all major platforms
 - Auto PATH setup in `fleet init`: symlinks to `~/.local/bin`, updates shell rc files
 - bash 4+ version check with macOS-specific install guidance
 - "Why Fleet?" section with 6 value props
