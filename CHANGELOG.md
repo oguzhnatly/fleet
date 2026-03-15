@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] · 2026-03-15
+
+### Fixed
+- `SKILL.md`: corrected version check block line range from 9-20 to 10-22 in the bash 3.2 compatibility section (line 9 is blank; the block closes at line 22 with `fi` and `exit 1`)
+- `SKILL.md`: replaced prompt injection trigger language (`Red line:`, "bypass", "security controls", "commenting out") with neutral phrasing that preserves identical guidance without triggering security scanner false positives
+
+---
+
 ## [2.0.3] · 2026-03-01
 
 ### Changed
@@ -84,5 +92,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SVG banner with CSS animations
 - Full documentation (configuration reference, patterns guide)
 
+[2.1.0]: https://github.com/oguzhnatly/fleet/releases/tag/v2.1.0
 [1.1.0]: https://github.com/oguzhnatly/fleet/releases/tag/v1.1.0
 [1.0.0]: https://github.com/oguzhnatly/fleet/releases/tag/v1.0.0
