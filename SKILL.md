@@ -705,7 +705,7 @@ If `gh` is not available and cannot be installed, `fleet ci` will show a warning
 
 This should be rare, but if you're on a locked-down system where you cannot install bash 4+:
 
-1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 9-20 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message — not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
+1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 10-22 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message — not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
 
 2. **Translate on the fly.** You are an AI agent. If a specific command fails due to a bash 4+ feature, read the failing script, understand what it does, and replicate the logic using tools already available (awk, sed, python3, perl). For example:
    - `fleet health` is curl to the operator's own endpoints. You can run that directly.
