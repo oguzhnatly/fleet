@@ -10,10 +10,12 @@
 #   trust_all_json     <log_file> <config> [window_h]  → JSON array
 #
 # Formula:  trust = quality_score × speed_multiplier
-#   quality_score  = weighted(success + 0.5×steered) / total_weight
-#                    steer_count within a task applies up to 30% penalty
-#   speed_mult     = 1.0 (≤5m), 0.9 (≤15m), 0.75 (≤30m), ≥0.5 (>30m)
-# Recency weights: ≤window_h → 2×: ≤168h → 1×: older → 0.5×
+#   quality_score per task:
+#     success:         1.0 - 0.15 × steer_count  (min 0.70)
+#     steered:         0.5 - 0.10 × (steer_count - 1)  (min 0.30)
+#     failure/timeout: 0.0
+#   speed_mult = 1.0 (≤5m), 0.9 (≤15m), 0.75 (≤30m), ≥0.5 (>30m)
+# Recency weights: ≤window_h → 2×, ≤168h → 1×, older → 0.5×
 # Trend:          compare [0..7d] vs [7d..14d]; ↑ if delta > 5%, ↓ if < -5%
 
 FLEET_TRUST_WINDOW_HOURS="${FLEET_TRUST_WINDOW_HOURS:-72}"

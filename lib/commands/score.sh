@@ -259,7 +259,7 @@ for agent_name in target_agents:
     if avg_min:
         info_parts.append(f"Avg duration: {avg_min}m")
     info_parts.append(f"Speed mult: {sp:.2f}")
-    print(f"  {D}{': '.join(info_parts)}{N}")
+    print(f"  {D}{'  '.join(info_parts)}{N}")
     print()
 
     if by_type:

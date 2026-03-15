@@ -106,39 +106,43 @@ def best_agent_for_type(task_type):
     """Return agent name with highest trust for the given task type.
 
     Selection order:
-    1. Highest trust score among agents with type-specific log data.
-    2. Highest overall trust (with 0.8x penalty) among agents with any log data.
-    3. Name-based role match: prefer agents whose name contains the task type.
+    1. Highest trust score among agents WITH type-specific log data for this task type.
+    2. Name-based role match when no agent has type-specific data (e.g. "deployer" for deploy tasks).
+    3. Highest overall trust (with 0.8x penalty) when no name match exists.
     4. First available agent as last resort.
     """
-    scores = {}
+    if not available:
+        return "coder"
+
+    # Separate agents with type-specific history from those without
+    typed_scores = {}
     for name in available:
         entries = all_entries.get(name, [])
         typed   = [e for e in entries
                    if (e.get("task_type") or "general") == task_type]
         if typed:
             s = compute_trust(typed, window_h)
-            scores[name] = s if s is not None else 0.0
-        else:
-            # No type-specific data: use overall score with 0.8x penalty
-            s = compute_trust(entries, window_h)
-            scores[name] = (s if s is not None else 0.0) * 0.8
+            typed_scores[name] = s if s is not None else 0.0
 
-    if not scores:
-        return available[0] if available else "coder"
+    # If any agent has type-specific data, pick the highest-scoring one
+    if typed_scores:
+        return max(typed_scores, key=lambda n: typed_scores[n])
 
-    best_score = max(scores.values())
+    # No agent has type-specific data: prefer role name match
+    role_keyword = task_type.rstrip("ing").rstrip("e")  # code, deploy, review, research, qa
+    name_matches = [n for n in available if role_keyword.lower() in n.lower()]
+    if name_matches:
+        return name_matches[0]
 
-    # When all agents score 0.0 (no log data), fall back to name-based role matching
-    if best_score == 0.0:
-        # Prefer an agent whose name contains the task_type keyword
-        role_keyword = task_type.rstrip("ing").rstrip("e")  # code, deploy, review, research, qa
-        name_matches = [n for n in available if role_keyword.lower() in n.lower()]
-        if name_matches:
-            return name_matches[0]
-        return available[0]
+    # Last resort: highest overall trust (with 0.8x penalty for untested type)
+    overall_scores = {}
+    for name in available:
+        s = compute_trust(all_entries.get(name, []), window_h)
+        overall_scores[name] = (s if s is not None else 0.0) * 0.8
+    if overall_scores:
+        return max(overall_scores, key=lambda n: overall_scores[n])
 
-    return max(scores, key=lambda n: scores[n])
+    return available[0]
 
 # ── Detect matched task types ──────────────────────────────────────────────────
 matched = {}

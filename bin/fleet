@@ -50,14 +50,16 @@ _fleet_bg_version_check() {
     now=$(date +%s)
     if [[ -f "$cache" ]]; then
         local age
-        age=$(python3 -c "
-import json, time
+        age=$(python3 - "$cache" <<'BGPY_AGE'
+import json, time, sys
 try:
-    d = json.load(open('$cache'))
-    print(int(time.time()) - d.get('ts', 0))
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    print(int(time.time()) - d.get("ts", 0))
 except Exception:
     print(999999)
-" 2>/dev/null || echo 999999)
+BGPY_AGE
+2>/dev/null || echo 999999)
         [[ "$age" -lt 86400 ]] && return 0
     fi
     (
