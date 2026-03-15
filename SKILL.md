@@ -40,13 +40,30 @@ sensitive:
   hardening: "chmod 600 ~/.fleet/config.json recommended. Documented in SECURITY.md."
 installBehavior:
   writes:
-    - "~/.fleet/config.json (created on first fleet init, contains agent ports and tokens)"
-    - "~/.local/bin/fleet (symlink to binary)"
-    - "~/.bashrc / ~/.zshrc / ~/.profile (PATH export appended if needed)"
+    - "~/.fleet/config.json (chmod 600, set immediately on creation, contains agent gateway auth tokens in plaintext)"
+    - "~/.local/bin/fleet (symlink to binary, standard XDG location)"
+    - "~/.bashrc or ~/.zshrc or ~/.profile (PATH export appended only if ~/.local/bin not already present)"
   reads:
-    - "~/.openclaw/openclaw.json (one-time read to detect workspace path, not stored)"
-    - "Loopback ports 40000-50000 (scanned once during init to discover running gateways)"
-  consent: "Running fleet init is the operator's explicit consent to the writes above. Manual setup (clone + edit ~/.fleet/config.json) skips all automatic writes."
+    - "~/.openclaw/openclaw.json (read-only, one-time auto-detection of workspace path, never stored or transmitted)"
+    - "127.0.0.1:40000-50000 (loopback port scan, one-time gateway discovery during fleet init)"
+  consent: "Running fleet init is the operator's explicit consent to the writes above. Manual alternative: clone repo and create ~/.fleet/config.json manually. This skips all automatic writes."
+  skipInit: "Clone the repo. Create ~/.fleet/config.json from templates/configs/minimal.json. Add bin/ to PATH manually. No ports scanned, no rc files modified, no symlinks created."
+updateMechanism:
+  command: "fleet update"
+  source: "api.github.com/repos/oguzhnatly/fleet/releases/latest"
+  verification: "SHA256 checksum verified against fleet.sha256 published alongside each GitHub release. Extraction halts if checksum does not match."
+  disable: "Set FLEET_NO_UPDATE_CHECK=1 to disable background version check entirely"
+agentScope:
+  permitted:
+    - "Run fleet commands to monitor, dispatch, steer, and observe the operator's own configured agent fleet"
+    - "Install missing bash/python3/curl dependencies using the operator's existing package manager"
+    - "Run fleet init to create config and link binary"
+  notPermitted:
+    - "Implement fleet functionality by other means if fleet commands fail"
+    - "Read session files other than those fleet itself created for named dispatch sessions"
+    - "Scan ports or probe network addresses not listed in the operator's config"
+    - "Modify OpenClaw configuration files"
+    - "Run commands outside the scope of fleet management or dependency setup"
 ---
 
 # Fleet: Multi-Agent Fleet Management
@@ -763,105 +780,45 @@ Log fleet operational learnings to `.learnings/`:
 - CI failure patterns → `LEARNINGS.md`
 - Configuration improvements → promote to `TOOLS.md`
 
-## Making Fleet Work Anywhere
+## Dependency Requirements
 
-**Purpose of this section:** Ensure the coordinator agent can achieve fleet visibility on any system the operator runs it on, regardless of platform. The goal is operational visibility: not running a specific script.
+Fleet requires three system binaries: **bash 4+**, **python3 3.10+**, and **curl**. Install these using your platform's package manager before running `fleet init`.
 
-**Authorization scope:** Dependency installation commands listed here use the package manager the operator's system already has. None require root unless the operator's package manager requires it (e.g., `apt-get` on some systems). Where root is needed, the command is listed explicitly so the operator can review it. The coordinator should prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) wherever possible.
+If these dependencies are not available in the operator's environment, fleet cannot run there. Do not attempt to replicate fleet functionality by other means. Report the missing dependency to the operator and ask them to install it or run fleet on a supported system.
 
-**Important:** If a dependency install step requires root and the coordinator is not certain the operator has authorized it, ask before running. This is the one exception to autonomous operation in this skill.
+### Platform installation
 
-Fleet needs three things: **bash 4+**, **python3 3.10+**, and **curl**. Below is the complete compatibility playbook. Work through it top to bottom. If one approach fails, try the next.
+| Platform | Command |
+|----------|---------|
+| **Ubuntu / Debian** | `sudo apt-get update && sudo apt-get install -y bash python3 curl` |
+| **Fedora / RHEL** | `sudo dnf install -y bash python3 curl` |
+| **macOS** (ships bash 3.2) | `brew install bash python3 curl` then use `/opt/homebrew/bin/bash` |
+| **Alpine** | `apk add bash python3 curl` |
+| **No root access** | Ask the operator to install the dependencies. Fleet does not self-install system packages without operator authorization. |
 
-### Step 1: Check What You Have
+**macOS note:** `/usr/bin/bash` on macOS is bash 3.2. Fleet requires bash 4+. After `brew install bash`, fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash`. No additional configuration needed.
+
+**If a dependency install step requires root and the operator has not authorized it, ask before running.** This is the only exception to autonomous operation in this skill.
+
+### Verifying prerequisites
 
 ```bash
-# Run these first. Know your environment.
-bash --version 2>/dev/null | head -1
-python3 --version 2>/dev/null
-curl --version 2>/dev/null | head -1
-uname -s  # Linux, Darwin, FreeBSD, etc.
-cat /etc/os-release 2>/dev/null | head -3  # Distro info
+bash --version 2>/dev/null | head -1   # need bash 4.x or higher
+python3 --version 2>/dev/null          # need 3.10 or higher
+curl --version 2>/dev/null | head -1   # any version
 ```
 
-### Step 2: Install Missing Dependencies
+If any of these commands fail or return an incompatible version, install the missing dependency using the platform table above before proceeding.
 
-#### bash 4+
+### bash 3.2 compatibility (macOS only)
 
-| Platform | Command |
-|----------|---------|
-| **macOS** (ships bash 3.2) | `brew install bash`: then fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash` |
-| **Ubuntu/Debian** | `sudo apt-get update && sudo apt-get install -y bash` (usually already 5.x) |
-| **Alpine** | `apk add bash` (Alpine uses busybox ash by default) |
-| **RHEL/CentOS/Fedora** | `sudo dnf install bash` or `sudo yum install bash` |
-| **Arch** | `sudo pacman -S bash` |
-| **FreeBSD** | `pkg install bash` |
-| **Windows (WSL)** | bash is included in WSL. If using Git Bash, it ships bash 4+. |
-| **Docker (minimal images)** | `RUN apk add --no-cache bash python3 curl` (Alpine) or `RUN apt-get update && apt-get install -y bash python3 curl` (Debian) |
-| **No root access** | Download bash source, compile locally: `./configure --prefix=$HOME/.local && make && make install`: then `export PATH="$HOME/.local/bin:$PATH"` |
-| **NixOS** | `nix-env -iA nixpkgs.bash` |
+Lines 10-22 in `bin/fleet` are a version guard that exists solely to surface a helpful error message. It is not a functional security gate. On macOS with bash 3.2, run fleet via the brew-installed bash:
 
-**After installing on macOS:** Verify with `which bash` that it resolves to Homebrew bash (`/opt/homebrew/bin/bash` on Apple Silicon, `/usr/local/bin/bash` on Intel). The `#!/usr/bin/env bash` shebang picks up whichever `bash` is first in PATH.
+```bash
+/opt/homebrew/bin/bash $(which fleet) <command>
+```
 
-#### python3 3.10+
-
-| Platform | Command |
-|----------|---------|
-| **macOS** | `brew install python@3.12` |
-| **Ubuntu/Debian** | `sudo apt-get install -y python3` |
-| **Alpine** | `apk add python3` |
-| **RHEL/CentOS** | `sudo dnf install python3` |
-| **Arch** | `sudo pacman -S python` |
-| **No root access** | Use `pyenv`: `curl https://pyenv.run \| bash && pyenv install 3.12 && pyenv global 3.12` |
-
-**Fleet uses python3 only for JSON parsing.** No pip packages needed. No virtual environment needed. Just the interpreter.
-
-#### curl
-
-| Platform | Command |
-|----------|---------|
-| **Almost everywhere** | Pre-installed. Check with `curl --version`. |
-| **Alpine** | `apk add curl` |
-| **Minimal Docker** | `apt-get install -y curl` or `apk add curl` |
-
-#### gh CLI (optional, for `fleet ci`)
-
-| Platform | Command |
-|----------|---------|
-| **macOS** | `brew install gh` |
-| **Ubuntu/Debian** | See [cli.github.com/packages](https://cli.github.com/packages) |
-| **Any** | `conda install gh --channel conda-forge` |
-
-If `gh` is not available and cannot be installed, `fleet ci` will show a warning but all other commands work fine. Do not let a missing `gh` block fleet setup.
-
-### Step 3: If You Truly Cannot Get bash 4+
-
-This should be rare, but if you're on a locked-down system where you cannot install bash 4+:
-
-1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 10-22 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message: not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
-
-2. **Translate on the fly.** You are an AI agent. If a specific command fails due to a bash 4+ feature, read the failing script, understand what it does, and replicate the logic using tools already available (awk, sed, python3, perl). For example:
-   - `fleet health` is curl to the operator's own endpoints. You can run that directly.
-   - `fleet agents` is curl to each loopback gateway port. Replicable in python3 alone.
-   - `fleet sitrep` combines health checks, CI queries, and delta tracking. Each piece is independent.
-
-3. **Create a wrapper.** If python3 is available but bash 4+ is not, write a thin python3 wrapper that reimplements the critical commands. The logic is: HTTP health checks to loopback ports + JSON parsing + formatted output. All of this stays local.
-
-4. **Report what works and what does not.** Tell the operator: "Fleet is running with limited compatibility. Commands X, Y, Z work. Command W needs bash 4+ for [specific feature]. Here is what I did instead."
-
-**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 10-22). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and should not be edited.
-
-### Step 4: Environments Without a Shell (Extremely Rare)
-
-If you're running in a sandboxed environment with no shell access:
-
-- **Use the fleet logic directly.** Fleet commands are: (a) curl to loopback gateway ports the operator controls, (b) parse JSON responses, (c) track state in a local file. Any HTTP client and JSON parser can do this.
-- **The fleet config format is documented** in `docs/configuration.md`. Read `~/.fleet/config.json`, iterate over agents, hit their `/health` endpoints, format the output. That is `fleet agents` in 10 lines of any language.
-- **State tracking for SITREP:** Read/write `~/.fleet/state/sitrep.json` to track deltas. Format: `{"agents": {...}, "ci": {...}, "endpoints": {...}, "timestamp": "..."}`.
-
-### The Goal
-
-**Operational visibility for the operator, not running a specific bash script.** Fleet is the fastest path, but if the environment resists, adapt using the same local-only, operator-authorized scope. The operator installed this skill to have fleet management work. Achieve that goal through whatever means are available within the authorized scope.
+**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 10-22). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and must not be edited.
 
 ## Best Practices
 

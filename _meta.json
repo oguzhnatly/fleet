@@ -1,6 +1,6 @@
 {
   "slug": "fleet",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "type": "installable-cli",
   "description": "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install.",
   "requires": {
@@ -14,6 +14,29 @@
     ],
     "bashVersion": "4.0",
     "pythonVersion": "3.10"
+  },
+  "installSpec": {
+    "method": "clawhub",
+    "command": "clawhub install fleet",
+    "manual": "git clone https://github.com/oguzhnatly/fleet.git && fleet/bin/fleet init",
+    "initRequired": true,
+    "initCommand": "fleet init",
+    "initWrites": [
+      "~/.fleet/config.json (chmod 600, contains agent gateway auth tokens in plaintext)",
+      "~/.local/bin/fleet (symlink to binary, standard XDG location)",
+      "~/.bashrc or ~/.zshrc or ~/.profile (PATH export appended only if ~/.local/bin not already on PATH)"
+    ],
+    "initReads": [
+      "~/.openclaw/openclaw.json (read-only, one-time workspace path auto-detection)",
+      "127.0.0.1:40000-50000 (loopback port scan, one-time gateway discovery during init)"
+    ],
+    "skipInit": "Manual alternative: clone repo, create ~/.fleet/config.json manually, add ~/.fleet/../bin to PATH. No automatic writes.",
+    "updateMechanism": {
+      "command": "fleet update",
+      "source": "api.github.com/repos/oguzhnatly/fleet/releases/latest",
+      "verification": "SHA256 checksum verified against fleet.sha256 published alongside each GitHub release before extraction",
+      "disableCheck": "Set FLEET_NO_UPDATE_CHECK=1 to disable background version check and update banner"
+    }
   },
   "envVars": {
     "optional": [
@@ -71,6 +94,12 @@
       "No transmitting tokens or credentials outside loopback"
     ]
   },
+  "sensitive": {
+    "storedPlaintext": [
+      "~/.fleet/config.json (agent gateway auth tokens)"
+    ],
+    "hardening": "chmod 600 ~/.fleet/config.json and chmod 700 ~/.openclaw ~/.openclaw-* as documented in SECURITY.md"
+  },
   "install": {
     "method": "clawhub",
     "clawhub": "clawhub install fleet",
@@ -78,11 +107,5 @@
     "initBehavior": "fleet init scans loopback ports for running gateways, reads ~/.openclaw/openclaw.json for workspace path, creates ~/.fleet/config.json, symlinks binary to ~/.local/bin/fleet, and appends PATH export to shell rc file if needed. All writes are within the installing user's home directory.",
     "consent": "Installing this skill is the operator's explicit consent to the init behavior described above. If you do not want automatic writes to your home directory or shell rc modification, clone the repo and configure ~/.fleet/config.json manually without running fleet init."
   },
-  "installable": true,
-  "sensitive": {
-    "storedPlaintext": [
-      "~/.fleet/config.json (agent gateway auth tokens)"
-    ],
-    "hardening": "chmod 600 ~/.fleet/config.json and chmod 700 ~/.openclaw ~/.openclaw-* as documented in SECURITY.md"
-  }
+  "installable": true
 }

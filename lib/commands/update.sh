@@ -198,11 +198,43 @@ HELP
     local tmp_dir
     tmp_dir=$(mktemp -d)
     local archive="${tmp_dir}/fleet.tar.gz"
+    local checksum_file="${tmp_dir}/fleet.sha256"
 
+    # Fetch tarball
     if ! curl -fsSL "$tarball_url" -o "$archive" 2>/dev/null; then
         out_fail "Download failed. Check your network connection."
         rm -rf "$tmp_dir"
         return 1
+    fi
+
+    # Fetch checksum file published alongside the release (fleet.sha256)
+    local checksum_url="https://github.com/${FLEET_UPDATE_REPO}/releases/download/${latest_tag}/fleet.sha256"
+    local skip_verify=false
+    if curl -fsSL "$checksum_url" -o "$checksum_file" 2>/dev/null && [[ -s "$checksum_file" ]]; then
+        local expected_hash actual_hash
+        expected_hash=$(awk '{print $1}' "$checksum_file")
+        actual_hash=$(python3 -c "
+import hashlib, sys
+with open(sys.argv[1], 'rb') as f:
+    print(hashlib.sha256(f.read()).hexdigest())
+" "$archive" 2>/dev/null)
+        if [[ -z "$actual_hash" ]]; then
+            out_fail "Could not compute SHA256 of downloaded archive."
+            rm -rf "$tmp_dir"
+            return 1
+        fi
+        if [[ "$actual_hash" != "$expected_hash" ]]; then
+            out_fail "SHA256 mismatch. Download may be corrupted or tampered."
+            out_fail "  expected: ${expected_hash}"
+            out_fail "  actual:   ${actual_hash}"
+            rm -rf "$tmp_dir"
+            return 1
+        fi
+        out_ok "SHA256 verified: ${actual_hash:0:16}..."
+    else
+        out_warn "No checksum file found for ${latest_tag}. Proceeding without verification."
+        out_warn "To verify manually: sha256sum ${archive}"
+        skip_verify=true
     fi
 
     tar -xzf "$archive" -C "$tmp_dir" 2>/dev/null
