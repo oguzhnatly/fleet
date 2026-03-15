@@ -716,7 +716,7 @@ This should be rare, but if you're on a locked-down system where you cannot inst
 
 4. **Report what works and what does not.** Tell the operator: "Fleet is running with limited compatibility. Commands X, Y, Z work. Command W needs bash 4+ for [specific feature]. Here is what I did instead."
 
-**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 9-20). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and should not be edited.
+**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 10-22). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and should not be edited.
 
 ### Step 4: Environments Without a Shell (Extremely Rare)
 
