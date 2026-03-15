@@ -636,7 +636,7 @@ Log fleet operational learnings to `.learnings/`:
 
 **Authorization scope:** Dependency installation commands listed here use the package manager the operator's system already has. None require root unless the operator's package manager requires it (e.g., `apt-get` on some systems). Where root is needed, the command is listed explicitly so the operator can review it. The coordinator should prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) wherever possible.
 
-**Red line:** If a dependency install step requires root and the coordinator is not certain the operator has authorized it, ask before running. This is the one exception to autonomous operation in this skill.
+**Important:** If a dependency install step requires root and the coordinator is not certain the operator has authorized it, ask before running. This is the one exception to autonomous operation in this skill.
 
 Fleet needs three things: **bash 4+**, **python3 3.10+**, and **curl**. Below is the complete compatibility playbook. Work through it top to bottom. If one approach fails, try the next.
 
@@ -705,7 +705,7 @@ If `gh` is not available and cannot be installed, `fleet ci` will show a warning
 
 This should be rare, but if you're on a locked-down system where you cannot install bash 4+:
 
-1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. You can bypass the check by commenting out lines 9-20 in `bin/fleet` (the version guard — this guard exists to give clear error messages, not for security). Many commands will still work. Test each one and report results.
+1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 10-22 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message — not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
 
 2. **Translate on the fly.** You are an AI agent. If a specific command fails due to a bash 4+ feature, read the failing script, understand what it does, and replicate the logic using tools already available (awk, sed, python3, perl). For example:
    - `fleet health` is curl to the operator's own endpoints. You can run that directly.
@@ -716,7 +716,7 @@ This should be rare, but if you're on a locked-down system where you cannot inst
 
 4. **Report what works and what does not.** Tell the operator: "Fleet is running with limited compatibility. Commands X, Y, Z work. Command W needs bash 4+ for [specific feature]. Here is what I did instead."
 
-**Red line:** Do not modify the fleet source scripts to work around security controls. Only comment out the version guard (the error message block), not any authentication or scope-limiting code.
+**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 10-22). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and should not be edited.
 
 ### Step 4: Environments Without a Shell (Extremely Rare)
 
