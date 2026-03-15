@@ -780,45 +780,88 @@ Log fleet operational learnings to `.learnings/`:
 - CI failure patterns → `LEARNINGS.md`
 - Configuration improvements → promote to `TOOLS.md`
 
-## Dependency Requirements
+## Dependency Installation
 
-Fleet requires three system binaries: **bash 4+**, **python3 3.10+**, and **curl**. Install these using your platform's package manager before running `fleet init`.
+Fleet requires three things: **bash 4+**, **python3 3.10+**, and **curl**. Below is the complete platform-by-platform installation reference. Install the missing dependencies, then run `fleet init`.
 
-If these dependencies are not available in the operator's environment, fleet cannot run there. Do not attempt to replicate fleet functionality by other means. Report the missing dependency to the operator and ask them to install it or run fleet on a supported system.
+**Authorization:** Dependency installation commands listed here use the package manager the operator's system already has. None require root unless the operator's package manager requires it (e.g., `apt-get` on some systems). Where root is needed, the command is listed explicitly so the operator can review it before running. Prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) when root is not available.
 
-### Platform installation
+**Important:** If a dependency install step requires root and the coordinator is not certain the operator has authorized it, stop and ask before running. This is the only exception to autonomous operation in this skill.
+
+### Step 1: Check What You Have
+
+```bash
+# Run these first. Know your environment.
+bash --version 2>/dev/null | head -1
+python3 --version 2>/dev/null
+curl --version 2>/dev/null | head -1
+uname -s  # Linux, Darwin, FreeBSD, etc.
+cat /etc/os-release 2>/dev/null | head -3  # Distro info
+```
+
+### Step 2: Install Missing Dependencies
+
+#### bash 4+
 
 | Platform | Command |
 |----------|---------|
-| **Ubuntu / Debian** | `sudo apt-get update && sudo apt-get install -y bash python3 curl` |
-| **Fedora / RHEL** | `sudo dnf install -y bash python3 curl` |
-| **macOS** (ships bash 3.2) | `brew install bash python3 curl` then use `/opt/homebrew/bin/bash` |
-| **Alpine** | `apk add bash python3 curl` |
-| **No root access** | Ask the operator to install the dependencies. Fleet does not self-install system packages without operator authorization. |
+| **macOS** (ships bash 3.2) | `brew install bash`: then fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash` |
+| **Ubuntu/Debian** | `sudo apt-get update && sudo apt-get install -y bash` (usually already 5.x) |
+| **Alpine** | `apk add bash` (Alpine uses busybox ash by default) |
+| **RHEL/CentOS/Fedora** | `sudo dnf install bash` or `sudo yum install bash` |
+| **Arch** | `sudo pacman -S bash` |
+| **FreeBSD** | `pkg install bash` |
+| **Windows (WSL)** | bash is included in WSL. If using Git Bash, it ships bash 4+. |
+| **Docker (minimal images)** | `RUN apk add --no-cache bash python3 curl` (Alpine) or `RUN apt-get update && apt-get install -y bash python3 curl` (Debian) |
+| **No root access** | Download bash source, compile locally: `./configure --prefix=$HOME/.local && make && make install`: then `export PATH="$HOME/.local/bin:$PATH"` |
+| **NixOS** | `nix-env -iA nixpkgs.bash` |
 
-**macOS note:** `/usr/bin/bash` on macOS is bash 3.2. Fleet requires bash 4+. After `brew install bash`, fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash`. No additional configuration needed.
+**After installing on macOS:** Verify with `which bash` that it resolves to Homebrew bash (`/opt/homebrew/bin/bash` on Apple Silicon, `/usr/local/bin/bash` on Intel). The `#!/usr/bin/env bash` shebang picks up whichever `bash` is first in PATH.
 
-**If a dependency install step requires root and the operator has not authorized it, ask before running.** This is the only exception to autonomous operation in this skill.
+#### python3 3.10+
 
-### Verifying prerequisites
+| Platform | Command |
+|----------|---------|
+| **macOS** | `brew install python@3.12` |
+| **Ubuntu/Debian** | `sudo apt-get install -y python3` |
+| **Alpine** | `apk add python3` |
+| **RHEL/CentOS** | `sudo dnf install python3` |
+| **Arch** | `sudo pacman -S python` |
+| **No root access** | Use `pyenv`: `curl https://pyenv.run \| bash && pyenv install 3.12 && pyenv global 3.12` |
 
-```bash
-bash --version 2>/dev/null | head -1   # need bash 4.x or higher
-python3 --version 2>/dev/null          # need 3.10 or higher
-curl --version 2>/dev/null | head -1   # any version
-```
+**Fleet uses python3 only for JSON parsing.** No pip packages needed. No virtual environment needed. Just the interpreter.
 
-If any of these commands fail or return an incompatible version, install the missing dependency using the platform table above before proceeding.
+#### curl
 
-### bash 3.2 compatibility (macOS only)
+| Platform | Command |
+|----------|---------|
+| **Almost everywhere** | Pre-installed. Check with `curl --version`. |
+| **Alpine** | `apk add curl` |
+| **Minimal Docker** | `apt-get install -y curl` or `apk add curl` |
 
-Lines 10-22 in `bin/fleet` are a version guard that exists solely to surface a helpful error message. It is not a functional security gate. On macOS with bash 3.2, run fleet via the brew-installed bash:
+#### gh CLI (optional, for `fleet ci`)
 
-```bash
-/opt/homebrew/bin/bash $(which fleet) <command>
-```
+| Platform | Command |
+|----------|---------|
+| **macOS** | `brew install gh` |
+| **Ubuntu/Debian** | See [cli.github.com/packages](https://cli.github.com/packages) |
+| **Any** | `conda install gh --channel conda-forge` |
 
-**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 10-22). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and must not be edited.
+If `gh` is not available and cannot be installed, `fleet ci` will show a warning but all other commands work fine. Do not let a missing `gh` block fleet setup.
+
+### Step 3: If You Truly Cannot Get bash 4+
+
+This should be rare, but if you're on a locked-down system where you cannot install bash 4+:
+
+1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 10-22 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message: not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
+
+2. **Report compatibility issues.** If fleet cannot run due to a bash version or missing dependency, report the exact error and the output of `bash --version`, `python3 --version`, and `curl --version` to the operator. Ask the operator to install the missing dependency using the platform table in Step 2. Do not attempt to replicate fleet functionality by other means.
+
+**Note:** The only line in `bin/fleet` appropriate to edit for compatibility is the version check block (lines 10-22). That block exists purely to show a helpful error message. Every other part of the scripts implements the actual command logic and should not be edited.
+
+### Step 4: Environments Without Required Dependencies
+
+Fleet requires bash 4+, python3 3.10+, and curl. If these cannot be installed in the current environment, fleet cannot run there. Report the missing dependency to the operator and ask them to provide an environment where the prerequisites are available. Do not attempt to replicate fleet functionality by other means.
 
 ## Best Practices
 
