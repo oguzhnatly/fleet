@@ -2,6 +2,20 @@
 name: fleet
 type: installable-cli
 install: "clawhub install fleet"
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - bash
+        - python3
+        - curl
+    optionalBins:
+      - gh
+    install:
+      - id: clawhub
+        kind: clawhub
+        slug: fleet
+        label: "Install fleet via ClawHub"
 description: "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. Operations are local-only (loopback) plus explicitly declared external endpoints. Operator consent required before install."
 triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed, trust score, which agent is reliable, fleet trust, fleet score, agent reliability, who should I assign, best agent for task"
 requires:
@@ -11,6 +25,22 @@ requires:
     - curl
   optionalBinaries:
     - gh
+envVars:
+  optional:
+    - name: FLEET_CONFIG
+      description: "Override path to fleet config (default: ~/.fleet/config.json)"
+    - name: FLEET_LOG
+      description: "Override dispatch log path (default: ~/.fleet/log.jsonl)"
+    - name: FLEET_STATE_DIR
+      description: "Override state directory (default: ~/.fleet/state)"
+    - name: FLEET_TRUST_WINDOW_HOURS
+      description: "Override trust scoring window in hours (default: 72)"
+    - name: FLEET_NO_UPDATE_CHECK
+      description: "Set to 1 to disable background GitHub update check entirely"
+    - name: LINEAR_API_KEY
+      description: "Linear API key for CI ticket integration (optional, referenced in examples/solo-empire/config.json)"
+    - name: NO_COLOR
+      description: "Disable colored output"
 installSpec:
   method: clawhub
   command: "clawhub install fleet"
@@ -51,14 +81,16 @@ sensitive:
 agentScope:
   permitted:
     - "Run fleet commands within operator-configured scope"
-    - "Install bash/python3/curl via operator system package manager"
     - "Run fleet init to create config and link binary"
+    - "Run fleet update after operator explicitly requests it"
   notPermitted:
     - "Implement fleet functionality by other means if fleet commands fail"
+    - "Autonomously run system package managers (apt-get, brew, dnf, apk, etc.) to install dependencies"
+    - "Run any command requiring root or sudo without explicit operator instruction in the current conversation"
     - "Read session files fleet did not create"
     - "Scan addresses outside operator config"
     - "Modify OpenClaw config files"
-    - "Run commands outside fleet management or dependency setup"
+    - "Run commands outside fleet management"
 ---
 
 # Fleet: Multi-Agent Fleet Management
@@ -779,9 +811,9 @@ Log fleet operational learnings to `.learnings/`:
 
 Fleet requires three things: **bash 4+**, **python3 3.10+**, and **curl**. Below is the complete platform-by-platform installation reference. Install the missing dependencies, then run `fleet init`.
 
-**Authorization:** Dependency installation commands listed here use the package manager the operator's system already has. None require root unless the operator's package manager requires it (e.g., `apt-get` on some systems). Where root is needed, the command is listed explicitly so the operator can review it before running. Prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) when root is not available.
+**Operator action required:** The commands in this section are for the operator to run manually, not for the agent to run autonomously. The agent must not run system package managers on the operator's behalf. If a dependency is missing, the agent reports it and the operator installs it using the appropriate command below.
 
-**Important:** If a dependency install step requires root and the coordinator is not certain the operator has authorized it, stop and ask before running. This is the only exception to autonomous operation in this skill.
+Where root is required (e.g., `apt-get` on some systems), the command is shown explicitly. Prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) when root is not available.
 
 ### Step 1: Check What You Have
 

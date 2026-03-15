@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.4] · 2026-03-15
+
+### Fixed
+- `SKILL.md` frontmatter: added `metadata.openclaw.requires.bins` block so clawhub registry header correctly declares required binaries (resolves "no required binaries / instruction-only" mismatch)
+- `SKILL.md` frontmatter: added `envVars` block including `LINEAR_API_KEY` referenced in examples
+- `agentScope.permitted`: removed "install missing dependencies via package manager" — agents must report missing deps to the operator, not install them autonomously
+- `agentScope.notPermitted`: explicitly bans autonomous package manager execution and any sudo/root commands without explicit operator instruction
+- `SKILL.md` body: dependency section clarified as operator-action reference, not agent-autonomous steps
+
+---
+
 ## [3.0.3] · 2026-03-15
 
 ### Fixed
