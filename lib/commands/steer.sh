@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet steer · Send a mid-session correction to a running agent
+# fleet steer: Send a mid-session correction to a running agent
 # Sends to the same fleet session as fleet task (stable session key: fleet-<agent>)
 # Usage: fleet steer <agent> "<message>"
 

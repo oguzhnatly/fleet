@@ -43,17 +43,17 @@ See what changed. Dispatch tasks. Learn which agents actually deliver, and route
 
 ### Why Fleet?
 
-🔍 **Visibility** · Know which agents are up, which CI is red, what changed overnight. One command, full picture.
+🔍 **Visibility**: Know which agents are up, which CI is red, what changed overnight. One command, full picture.
 
-📊 **Delta tracking** · SITREP remembers the last run. Only shows what _changed_. No noise.
+📊 **Delta tracking**: SITREP remembers the last run. Only shows what _changed_. No noise.
 
-🔧 **Zero config** · `fleet init` detects running gateways, discovers your workspace, links itself to PATH. One command to go from clone to operational.
+🔧 **Zero config**: `fleet init` detects running gateways, discovers your workspace, links itself to PATH. One command to go from clone to operational.
 
-🧩 **Modular** · Each command is a separate file. Adding a new command means dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
+🧩 **Modular**: Each command is a separate file. Adding a new command means dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
 
-⚡ **Agent native** · Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage a fleet autonomously, install dependencies, and adapt to any environment. If bash isn't available, your agent figures out another way.
+⚡ **Agent native**: Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage a fleet autonomously, install dependencies, and adapt to any environment. If bash isn't available, your agent figures out another way.
 
-📦 **Pattern library** · Solo empire, dev team, research lab. Pre built configs for common setups.
+📦 **Pattern library**: Solo empire, dev team, research lab. Pre built configs for common setups.
 
 ## Contents
 
@@ -101,7 +101,7 @@ fleet sitrep
 |---------|-------------|
 | `fleet task <agent> "<prompt>"` | Dispatch a task to an agent, stream response live |
 | `fleet steer <agent> "<message>"` | Send a mid-session correction to a running agent |
-| `fleet watch <agent>` | Live session tail — polls every 3s, shows new messages as they arrive |
+| `fleet watch <agent>` | Live session tail: polls every 3s, shows new messages as they arrive |
 | `fleet parallel "<task>"` | Decompose into subtasks, assign by type, dispatch all concurrently |
 | `fleet kill <agent>` | Send a graceful stop signal to an agent session |
 | `fleet log` | Append-only structured log of all dispatches and outcomes |
@@ -129,6 +129,7 @@ fleet sitrep
 | `fleet backup` | Backup gateway configs, cron jobs, auth profiles |
 | `fleet restore` | Restore from latest backup |
 | `fleet init` | Interactive setup with gateway detection |
+| `fleet update` | Upgrade to the latest fleet release from GitHub |
 
 <details>
 <summary><strong>See command output examples</strong></summary>
@@ -175,7 +176,7 @@ Fleet Steer
 ```
 Watching coordinator
 ────────────────────
-  Session: main · polling every 3s · Ctrl+C to stop
+  Session: main: polling every 3s: Ctrl+C to stop
 
   Connecting to coordinator session...
   Last 3 message(s):
@@ -287,7 +288,7 @@ Resources
 Backups
   ✅ Last backup: 2 day(s) ago
 
-  All clear · 11 checks passed, 0 warnings
+  All clear: 11 checks passed, 0 warnings
 ```
 
 #### `fleet ci`
@@ -464,45 +465,45 @@ The agent reads the skill file, learns the commands, and runs health checks auto
 
 Fleet is being built in stages. Each version makes it more active, more intelligent, and more universal.
 
-### v1 · Shipped ✅
+### v1: Shipped ✅
 Visibility layer. Monitoring, delta SITREP, CI status, backup, audit. Fleet can see the entire operation.
 
-### v2 · Shipped ✅ (task dispatch and session steering)
+### v2: Shipped ✅ (task dispatch and session steering)
 Fleet stops being observational and becomes directive.
 
-- [x] `fleet log` — append-only structured log of everything dispatched and received (built first, foundation for everything else)
-- [x] `fleet task <agent> "<prompt>"` — dispatch a task to any agent from the CLI, with timeout and result capture
-- [x] `fleet watch <agent>` — live log tail from a specific agent session
-- [x] `fleet steer <agent> "<message>"` — send a mid-session correction to a running agent
-- [x] `fleet kill <agent>` — graceful session end
-- [x] `fleet parallel "<task>"` — break a high-level task into subtasks, assign to agents, run in parallel (with `--dry-run` to review decomposition before executing)
+- [x] `fleet log`: append-only structured log of everything dispatched and received (built first, foundation for everything else)
+- [x] `fleet task <agent> "<prompt>"`: dispatch a task to any agent from the CLI, with timeout and result capture
+- [x] `fleet watch <agent>`: live log tail from a specific agent session
+- [x] `fleet steer <agent> "<message>"`: send a mid-session correction to a running agent
+- [x] `fleet kill <agent>`: graceful session end
+- [x] `fleet parallel "<task>"`: break a high-level task into subtasks, assign to agents, run in parallel (with `--dry-run` to review decomposition before executing)
 
-### v3 · Planned (reliability scoring and agent trust)
+### v3: Shipped ✅ (reliability scoring and agent trust)
 Fleet learns which agents actually deliver, not just which ones are alive.
 
-- [ ] `fleet trust` — trust matrix for all agents with scores, trends, and task counts
-- [ ] `fleet score <agent>` — per-task-type reliability breakdown: code, review, research, deploy, qa
-- [ ] Reliability formula: `completion_rate × quality_rate × speed_score` — all three multiply, an agent cannot hide poor quality behind high volume
-- [ ] 48-72 hour rolling window — recent behavior weighted over historical, score recovers fast when issues are fixed
-- [ ] Reliability-weighted routing for `fleet parallel` — dispatch to best agent per task type, not just whoever is idle (upgrade point from v2)
-- [ ] Trust summary line appended to every `fleet sitrep` output
-- [ ] v3.5: two-source cross-validation — fleet log (internal) vs GitHub commits (external), flags divergence
+- [x] `fleet trust`: trust matrix for all agents with scores, trends, and task counts
+- [x] `fleet score [<agent>]`: per-task-type reliability breakdown: code, review, research, deploy, qa; with `--type` filter
+- [x] Reliability formula: `quality_score × speed_multiplier`: quality degrades per steer, speed penalizes slow agents
+- [x] 72h rolling window: recent tasks count 2×, 7-day tasks count 1×, older tasks count 0.5× (configurable via `trust.windowHours`)
+- [x] Reliability-weighted routing for `fleet parallel`: dispatches to highest-trust agent per task type, not just whoever is idle
+- [x] Trust summary line appended to every `fleet sitrep` output
+- [x] v3.5: cross-validation: `fleet score` checks code/deploy successes against GitHub CI activity within 1h, flags unverified tasks
 
-### v4 · Planned (cross-runtime adapter layer)
+### v4: Planned (cross-runtime adapter layer)
 Fleet works with any agent on any runtime, not just OpenClaw.
 
 - [ ] Pluggable adapter interface: three-function contract (health, info, version) every runtime implements
 - [ ] Built-in adapters: OpenClaw (verified), HTTP (any /health endpoint), Docker (container status), Process (inferred, labeled as such)
-- [ ] `fleet adapters` — list registered adapters, status, and whether health is verified or inferred
-- [ ] `fleet runtime add <name> <type>` — register a new runtime without editing config manually
-- [ ] `fleet runtime test <name>` — one-off health check against a named adapter for debugging
+- [ ] `fleet adapters`: list registered adapters, status, and whether health is verified or inferred
+- [ ] `fleet runtime add <name> <type>`: register a new runtime without editing config manually
+- [ ] `fleet runtime test <name>`: one-off health check against a named adapter for debugging
 - [ ] Backward compatible: existing configs default to OpenClaw adapter, zero migration needed
 
-### v5 · Planned (server mode and HTTP API)
+### v5: Planned (server mode and HTTP API)
 Fleet becomes an embeddable data source, not just a CLI.
 
-- [ ] `fleet serve` — start fleet as a local HTTP server (localhost only by default)
-- [ ] `fleet status` — show if server is running, on what port, and uptime
+- [ ] `fleet serve`: start fleet as a local HTTP server (localhost only by default)
+- [ ] `fleet status`: show if server is running, on what port, and uptime
 - [ ] REST API: `GET /agents`, `/sitrep`, `/trust`, `/log`, `/ci` and `POST /task`, `/steer`
 - [ ] All responses are structured JSON with stable field names
 - [ ] External tools, dashboards, and CI pipelines can consume fleet data without shelling out
@@ -526,4 +527,4 @@ If Fleet is useful to you, consider supporting its development:
 
 ## License
 
-[MIT](LICENSE) · [Oguzhan Atalay](https://github.com/oguzhnatly)
+[MIT](LICENSE): [Oguzhan Atalay](https://github.com/oguzhnatly)

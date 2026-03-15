@@ -4,7 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| 2.x.x   | ✅ Current |
+| 3.x.x   | ✅ Current |
+| 2.x.x   | ❌ End of life |
 | 1.x.x   | ❌ End of life |
 
 ## Reporting a Vulnerability
@@ -12,7 +13,7 @@
 If you discover a security vulnerability, please report it responsibly:
 
 1. **Do NOT open a public issue**
-2. Email: **oguzhnatly@gmail.com**
+2. Email: **info@oguzhanatalay.com**
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

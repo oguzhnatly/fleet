@@ -19,7 +19,7 @@ We are committed to making participation in this project a welcoming experience 
 
 ## Enforcement
 
-Instances of unacceptable behavior may be reported to **oguzhnatly@gmail.com**. All complaints will be reviewed and investigated.
+Instances of unacceptable behavior may be reported to **info@oguzhanatalay.com**. All complaints will be reviewed and investigated.
 
 ## Attribution
 

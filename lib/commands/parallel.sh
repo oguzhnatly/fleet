@@ -1,28 +1,30 @@
 #!/bin/bash
-# fleet parallel · Decompose a high-level task into subtasks and dispatch in parallel
+# fleet parallel: Decompose a high-level task into subtasks and dispatch in parallel
 # Usage: fleet parallel "<task>" [--dry-run] [--timeout <minutes>]
 
-# ── Decompose task into subtasks using heuristics + coordinator AI ────────────
+# ── v3: Trust-weighted decomposition ─────────────────────────────────────────
+# Selects the highest-trust agent per task type from the dispatch log.
+# When no log data exists, falls back to name-based role matching
+# (agents whose name contains the task type keyword, e.g. "coder" for code tasks).
 _parallel_decompose() {
     local task="$1"
 
-    python3 - "$FLEET_CONFIG_PATH" "$task" <<'PY'
-import json, sys, re
+    python3 - "$FLEET_CONFIG_PATH" "$FLEET_LOG_FILE" "$task" \
+              "${FLEET_TRUST_WINDOW_HOURS:-72}" <<'PY'
+import json, sys, os
+from datetime import datetime, timezone
 
 with open(sys.argv[1]) as f:
     config = json.load(f)
 
-task = sys.argv[2]
-task_lower = task.lower()
+log_file    = sys.argv[2]
+task        = sys.argv[3]
+window_h    = float(sys.argv[4])
+task_lower  = task.lower()
+now         = datetime.now(timezone.utc)
 
 available = [a["name"] for a in config.get("agents", [])]
 
-# ── Heuristic decomposition ──────────────────────────────────────────────────
-# Each subtask: { "agent": name, "prompt": str, "type": str }
-
-subtasks = []
-
-# Patterns that suggest multi-agent work
 patterns = {
     "research": ["research", "analys", "investigat", "compet", "find out", "look up", "check if"],
     "code":     ["implement", "build", "create", "add", "fix", "refactor", "write code", "develop"],
@@ -31,14 +33,6 @@ patterns = {
     "qa":       ["test", "qa", "quality", "spec", "coverage", "e2e"],
 }
 
-matched = {}
-for agent_type, keywords in patterns.items():
-    for kw in keywords:
-        if kw in task_lower:
-            matched[agent_type] = True
-            break
-
-# Build subtasks from matches
 type_prompts = {
     "research": f"Research phase: {task}",
     "code":     f"Implementation: {task}",
@@ -47,37 +41,143 @@ type_prompts = {
     "deploy":   f"Deploy: {task}",
 }
 
-# Map agent types to actual configured agents
-type_to_agent = {}
-for a in config.get("agents", []):
-    name = a.get("name", "")
-    role = a.get("role", name)
-    # Match by name or role
-    for t in patterns.keys():
-        if t in name.lower() or t in role.lower():
-            type_to_agent[t] = name
+# ── Load log entries grouped by agent ─────────────────────────────────────────
+all_entries = {}
+if os.path.exists(log_file):
+    with open(log_file) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                e = json.loads(line)
+                a = e.get("agent", "")
+                if a not in all_entries:
+                    all_entries[a] = []
+                all_entries[a].append(e)
+            except Exception:
+                pass
+
+# ── Trust scoring helpers ──────────────────────────────────────────────────────
+def _tq(outcome, steers):
+    steers = int(steers)
+    if outcome == "success":  return max(0.7, 1.0 - 0.15 * steers)
+    if outcome == "steered":  return max(0.3, 0.5 - 0.10 * max(0, steers - 1))
+    if outcome in ("failure", "timeout"): return 0.0
+    return None
+
+def _speed_mult(avg_min):
+    if avg_min is None or avg_min <= 5:  return 1.0
+    if avg_min <= 15:                    return 0.9
+    if avg_min <= 30:                    return 0.75
+    return max(0.5, 1.0 - (avg_min - 30) / 120.0)
+
+def compute_trust(entries, wh):
+    tw = qw = 0.0
+    durs = []
+    for e in entries:
+        try:
+            d = datetime.strptime(e.get("dispatched_at","")[:19],
+                                  "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+        except Exception:
+            continue
+        age = (now - d).total_seconds() / 3600.0
+        w   = 2.0 if age <= wh else (1.0 if age <= 168 else 0.5)
+        q   = _tq(e.get("outcome",""), e.get("steer_count", 0))
+        if q is None:
+            continue
+        tw += w; qw += w * q
+        c = e.get("completed_at")
+        if c:
+            try:
+                cd = datetime.strptime(c[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+                dur = (cd - d).total_seconds()
+                if 0 <= dur < 86400:
+                    durs.append(dur)
+            except Exception:
+                pass
+    if tw == 0:
+        return None
+    avg_min = (sum(durs) / len(durs)) / 60.0 if durs else None
+    return round(min(1.0, (qw / tw) * _speed_mult(avg_min)), 3)
+
+# ── Trust-ranked agent selection ──────────────────────────────────────────────
+def best_agent_for_type(task_type):
+    """Return agent name with highest trust for the given task type.
+
+    Selection order:
+    1. Highest trust score among agents WITH type-specific log data for this task type.
+    2. Name-based role match when no agent has type-specific data (e.g. "deployer" for deploy tasks).
+    3. Highest overall trust (with 0.8x penalty) when no name match exists.
+    4. First available agent as last resort.
+    """
+    if not available:
+        return "coder"
+
+    # Separate agents with type-specific history from those without
+    typed_scores = {}
+    for name in available:
+        entries = all_entries.get(name, [])
+        typed   = [e for e in entries
+                   if (e.get("task_type") or "general") == task_type]
+        if typed:
+            s = compute_trust(typed, window_h)
+            typed_scores[name] = s if s is not None else 0.0
+
+    # If any agent has type-specific data, pick the highest-scoring one
+    if typed_scores:
+        return max(typed_scores, key=lambda n: typed_scores[n])
+
+    # No agent has type-specific data: prefer role name match
+    role_keyword = task_type.rstrip("ing").rstrip("e")  # code, deploy, review, research, qa
+    name_matches = [n for n in available if role_keyword.lower() in n.lower()]
+    if name_matches:
+        return name_matches[0]
+
+    # Last resort: highest overall trust (with 0.8x penalty for untested type)
+    overall_scores = {}
+    for name in available:
+        s = compute_trust(all_entries.get(name, []), window_h)
+        overall_scores[name] = (s if s is not None else 0.0) * 0.8
+    if overall_scores:
+        return max(overall_scores, key=lambda n: overall_scores[n])
+
+    return available[0]
+
+# ── Detect matched task types ──────────────────────────────────────────────────
+matched = {}
+for agent_type, keywords in patterns.items():
+    for kw in keywords:
+        if kw in task_lower:
+            matched[agent_type] = True
+            break
+
+subtasks = []
 
 if not matched:
-    # No patterns matched — single task to coder (default)
-    agent = type_to_agent.get("code", available[0] if available else "coder")
-    subtasks.append({"agent": agent, "type": "code", "prompt": task})
+    # No patterns matched: dispatch single task to best overall agent
+    agent = best_agent_for_type("code")
+    trust_val = compute_trust(all_entries.get(agent, []), window_h)
+    subtasks.append({
+        "agent":  agent,
+        "type":   "code",
+        "prompt": task,
+        "trust":  trust_val,
+    })
 else:
     for task_type in matched:
-        agent = type_to_agent.get(task_type)
-        if not agent:
-            # Find first available agent with matching name
-            for a in available:
-                if task_type in a.lower():
-                    agent = a
-                    break
-        if not agent and available:
-            agent = available[0]
-        if agent:
-            subtasks.append({
-                "agent":  agent,
-                "type":   task_type,
-                "prompt": type_prompts.get(task_type, task),
-            })
+        agent     = best_agent_for_type(task_type)
+        trust_val = compute_trust(
+            [e for e in all_entries.get(agent, [])
+             if (e.get("task_type") or "general") == task_type],
+            window_h,
+        )
+        subtasks.append({
+            "agent":  agent,
+            "type":   task_type,
+            "prompt": type_prompts.get(task_type, task),
+            "trust":  trust_val,
+        })
 
 print(json.dumps(subtasks))
 PY
@@ -125,13 +225,20 @@ import json, sys
 subtasks = json.loads(sys.argv[1])
 C = "\033[36m"; D = "\033[2m"; BOLD = "\033[1m"; N = "\033[0m"
 
+G = "\033[32m"; Y = "\033[33m"; R = "\033[31m"
 for i, st in enumerate(subtasks, 1):
-    print(f"  {BOLD}{i}.{N} {C}{st['agent']:12}{N}  [{st['type']}]")
+    trust = st.get("trust")
+    if trust is not None:
+        tc = G if trust >= 0.8 else (Y if trust >= 0.6 else R)
+        trust_str = f"  {tc}trust:{round(trust*100)}%{N}"
+    else:
+        trust_str = f"  {D}trust: no data{N}"
+    print(f"  {BOLD}{i}.{N} {C}{st['agent']:12}{N}  [{st['type']}]{trust_str}")
     print(f"     {D}{st['prompt'][:100]}{'…' if len(st['prompt']) > 100 else ''}{N}")
     print()
 
 print(f"  {D}{'─' * 40}{N}")
-print(f"  {len(subtasks)} subtask(s) ready to dispatch in parallel.")
+print(f"  {len(subtasks)} subtask(s), agents selected by trust score.")
 print()
 PY
 
