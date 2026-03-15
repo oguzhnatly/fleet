@@ -209,7 +209,6 @@ HELP
 
     # Fetch checksum file published alongside the release (fleet.sha256)
     local checksum_url="https://github.com/${FLEET_UPDATE_REPO}/releases/download/${latest_tag}/fleet.sha256"
-    local skip_verify=false
     if curl -fsSL "$checksum_url" -o "$checksum_file" 2>/dev/null && [[ -s "$checksum_file" ]]; then
         local expected_hash actual_hash
         expected_hash=$(awk '{print $1}' "$checksum_file")
@@ -234,7 +233,6 @@ with open(sys.argv[1], 'rb') as f:
     else
         out_warn "No checksum file found for ${latest_tag}. Proceeding without verification."
         out_warn "To verify manually: sha256sum ${archive}"
-        skip_verify=true
     fi
 
     tar -xzf "$archive" -C "$tmp_dir" 2>/dev/null
