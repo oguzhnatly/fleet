@@ -11,8 +11,18 @@ cmd_score() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --window|-w)  window="${2:-72}"; shift 2 ;;
-            --type|-t)    type_filter="${2:-}"; shift 2 ;;
+            --window|-w)
+                if [[ $# -lt 2 || "${2:-}" == --* ]]; then
+                    echo "  fleet score: --window requires a value (hours)" >&2
+                    return 1
+                fi
+                window="$2"; shift 2 ;;
+            --type|-t)
+                if [[ $# -lt 2 || "${2:-}" == --* ]]; then
+                    echo "  fleet score: --type requires a value (e.g. code, deploy, review)" >&2
+                    return 1
+                fi
+                type_filter="$2"; shift 2 ;;
             --help|-h)
                 cat <<'HELP'
 
@@ -131,8 +141,9 @@ def score_bar(score, width=14):
     if score is None:
         return f"{D}{'no data':>{width}}{N}"
     filled = round(score * width)
+    empty  = width - filled
     c = G if score >= 0.8 else (Y if score >= 0.6 else R)
-    return f"{c}{BARS[:filled]}{D}{BAR_EMPTY[filled:]}{N}"
+    return f"{c}{BARS[:filled]}{D}{BAR_EMPTY[:empty]}{N}"
 
 def agent_trend(entries, now):
     def in_range(e, lo, hi):

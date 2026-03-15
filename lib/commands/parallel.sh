@@ -2,10 +2,10 @@
 # fleet parallel: Decompose a high-level task into subtasks and dispatch in parallel
 # Usage: fleet parallel "<task>" [--dry-run] [--timeout <minutes>]
 
-# ── Decompose task into subtasks using heuristics + coordinator AI ────────────
-# ── v3: Trust-weighted decompose ─────────────────────────────────────────────
-# Selects the best agent per task type based on trust scores from the log.
-# Falls back to name/role heuristics when no log data exists (new installs).
+# ── v3: Trust-weighted decomposition ─────────────────────────────────────────
+# Selects the highest-trust agent per task type from the dispatch log.
+# When no log data exists, falls back to name-based role matching
+# (agents whose name contains the task type keyword, e.g. "coder" for code tasks).
 _parallel_decompose() {
     local task="$1"
 
@@ -103,7 +103,14 @@ def compute_trust(entries, wh):
 
 # ── Trust-ranked agent selection ──────────────────────────────────────────────
 def best_agent_for_type(task_type):
-    """Return agent name with highest trust for the given task type."""
+    """Return agent name with highest trust for the given task type.
+
+    Selection order:
+    1. Highest trust score among agents with type-specific log data.
+    2. Highest overall trust (with 0.8x penalty) among agents with any log data.
+    3. Name-based role match: prefer agents whose name contains the task type.
+    4. First available agent as last resort.
+    """
     scores = {}
     for name in available:
         entries = all_entries.get(name, [])
@@ -113,12 +120,24 @@ def best_agent_for_type(task_type):
             s = compute_trust(typed, window_h)
             scores[name] = s if s is not None else 0.0
         else:
-            # No type-specific data: use overall score with penalty
+            # No type-specific data: use overall score with 0.8x penalty
             s = compute_trust(entries, window_h)
             scores[name] = (s if s is not None else 0.0) * 0.8
 
     if not scores:
         return available[0] if available else "coder"
+
+    best_score = max(scores.values())
+
+    # When all agents score 0.0 (no log data), fall back to name-based role matching
+    if best_score == 0.0:
+        # Prefer an agent whose name contains the task_type keyword
+        role_keyword = task_type.rstrip("ing").rstrip("e")  # code, deploy, review, research, qa
+        name_matches = [n for n in available if role_keyword.lower() in n.lower()]
+        if name_matches:
+            return name_matches[0]
+        return available[0]
+
     return max(scores, key=lambda n: scores[n])
 
 # ── Detect matched task types ──────────────────────────────────────────────────

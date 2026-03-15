@@ -265,6 +265,12 @@ if os.path.exists(log_f):
             if outcome in ("failure","timeout"): return 0.0
             return None
 
+        def _speed_mult(avg_min):
+            if avg_min is None or avg_min <= 5:  return 1.0
+            if avg_min <= 15: return 0.9
+            if avg_min <= 30: return 0.75
+            return max(0.5, 1.0 - (avg_min - 30) / 120.0)
+
         _entries = {}
         with open(log_f) as _lf:
             for _ln in _lf:
@@ -280,6 +286,7 @@ if os.path.exists(log_f):
         for _n in agents_cfg:
             _elist = _entries.get(_n, [])
             _tw = _qw = 0.0
+            _durs = []
             for _e in _elist:
                 try:
                     _d = _dt.strptime(_e.get("dispatched_at","")[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=_tz.utc)
@@ -288,9 +295,15 @@ if os.path.exists(log_f):
                     _q = _tq(_e.get("outcome",""), _e.get("steer_count",0))
                     if _q is None: continue
                     _tw += _w; _qw += _w * _q
+                    _comp_s = _e.get("completed_at","")
+                    if _comp_s:
+                        _cd = _dt.strptime(_comp_s[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=_tz.utc)
+                        _dur = (_cd - _d).total_seconds()
+                        if 0 <= _dur < 86400: _durs.append(_dur)
                 except Exception: pass
             if _tw > 0:
-                _scores[_n] = round(_qw / _tw, 2)
+                _avg_min = (sum(_durs) / len(_durs)) / 60.0 if _durs else None
+                _scores[_n] = round((_qw / _tw) * _speed_mult(_avg_min), 2)
 
         if _scores:
             _parts = []

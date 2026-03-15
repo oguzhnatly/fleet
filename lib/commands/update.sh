@@ -47,27 +47,73 @@ PY
 _update_cached_latest() {
     local now
     now=$(date +%s)
+    # Pass cache path as argument to avoid shell interpolation inside Python source
     if [[ -f "$FLEET_UPDATE_CACHE" ]]; then
-        local cached_time tag
-        cached_time=$(python3 -c "import json; d=json.load(open('$FLEET_UPDATE_CACHE')); print(d.get('ts',0))" 2>/dev/null || echo 0)
+        local cached_time
+        cached_time=$(python3 - "$FLEET_UPDATE_CACHE" <<'PY'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    print(d.get("ts", 0))
+except Exception:
+    print(0)
+PY
+)
         local age=$(( now - cached_time ))
         if [[ $age -lt 86400 ]]; then
-            python3 -c "import json; d=json.load(open('$FLEET_UPDATE_CACHE')); print(d.get('tag','')); print(d.get('url',''))" 2>/dev/null
+            python3 - "$FLEET_UPDATE_CACHE" <<'PY'
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    print(d.get("tag", ""))
+    print(d.get("url", ""))
+except Exception:
+    pass
+PY
             return 0
         fi
     fi
     local resp tag url
     resp=$(_update_latest_version)
-    tag=$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(d.get('tag',''))" "$resp" 2>/dev/null)
-    url=$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(d.get('url',''))" "$resp" 2>/dev/null)
-    if [[ -n "$tag" && -z "$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(d.get('error',''))" "$resp" 2>/dev/null)" ]]; then
+    tag=$(python3 - "$resp" <<'PY'
+import json, sys
+try:
+    print(json.loads(sys.argv[1]).get("tag", ""))
+except Exception:
+    print("")
+PY
+)
+    url=$(python3 - "$resp" <<'PY'
+import json, sys
+try:
+    print(json.loads(sys.argv[1]).get("url", ""))
+except Exception:
+    print("")
+PY
+)
+    local has_error
+    has_error=$(python3 - "$resp" <<'PY'
+import json, sys
+try:
+    print(json.loads(sys.argv[1]).get("error", ""))
+except Exception:
+    print("parse_error")
+PY
+)
+    if [[ -n "$tag" && -z "$has_error" ]]; then
         mkdir -p "$(dirname "$FLEET_UPDATE_CACHE")"
-        python3 -c "
-import json
-data = {'tag': '$tag', 'url': '$url', 'ts': $now}
-with open('$FLEET_UPDATE_CACHE', 'w') as f:
-    json.dump(data, f)
-" 2>/dev/null
+        # Write cache safely: pass tag, url, ts as argv to avoid injection from network values
+        python3 - "$FLEET_UPDATE_CACHE" "$tag" "$url" "$now" <<'PY'
+import json, sys
+cache_path = sys.argv[1]
+tag        = sys.argv[2]
+url        = sys.argv[3]
+ts         = int(sys.argv[4])
+with open(cache_path, "w") as f:
+    json.dump({"tag": tag, "url": url, "ts": ts}, f)
+PY
     fi
     printf '%s\n%s\n' "$tag" "$url"
 }
@@ -197,12 +243,8 @@ HELP
 
     rm -rf "$tmp_dir"
 
-    python3 -c "
-import json, os
-cache = '$FLEET_UPDATE_CACHE'
-if os.path.exists(cache):
-    os.remove(cache)
-" 2>/dev/null
+    # Remove stale cache so next invocation re-fetches
+    [[ -f "$FLEET_UPDATE_CACHE" ]] && rm -f "$FLEET_UPDATE_CACHE"
 
     out_ok "Updated to ${latest_tag}."
     echo
@@ -213,26 +255,26 @@ if os.path.exists(cache):
 # ── Version banner helper (called from bin/fleet on every invocation) ─────────
 # Prints a one-line update warning when a newer release is available.
 # Silent when already up to date or when GitHub is unreachable.
-# The GitHub check happens at most once per 24 hours (cache-backed).
 fleet_update_banner() {
     local cache="$FLEET_UPDATE_CACHE"
     [[ -z "$FLEET_STATE_DIR" ]] && cache="${HOME}/.fleet/state/update_check.json"
 
-    if [[ ! -f "$cache" ]]; then
-        return 0
-    fi
+    [[ ! -f "$cache" ]] && return 0
 
+    # Pass cache path as argument to avoid interpolating it into Python source
     local latest_tag
-    latest_tag=$(python3 -c "
-import json, os, time
-cache = '$cache'
+    latest_tag=$(python3 - "$cache" <<'PY'
+import json, os, time, sys
+cache = sys.argv[1]
 try:
-    d = json.load(open(cache))
-    if time.time() - d.get('ts', 0) < 86400:
-        print(d.get('tag', ''))
+    with open(cache) as f:
+        d = json.load(f)
+    if time.time() - d.get("ts", 0) < 86400:
+        print(d.get("tag", ""))
 except Exception:
     pass
-" 2>/dev/null)
+PY
+)
 
     [[ -z "$latest_tag" ]] && return 0
 

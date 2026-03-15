@@ -11,7 +11,12 @@ cmd_trust() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --window|-w)  window="${2:-72}"; shift 2 ;;
+            --window|-w)
+                if [[ $# -lt 2 || "${2:-}" == --* ]]; then
+                    echo "  fleet trust: --window requires a value (hours)" >&2
+                    return 1
+                fi
+                window="$2"; shift 2 ;;
             --json)       json_mode=true; shift ;;
             --help|-h)
                 cat <<'HELP'
@@ -21,10 +26,14 @@ cmd_trust() {
   Show the trust matrix for all configured agents.
 
   Trust score is computed from ~/.fleet/log.jsonl using the formula:
-    quality_score × speed_multiplier
+    trust_score = quality_score × speed_multiplier
 
-  quality_score  = weighted(success + 0.5×steered) / total_weight
-  speed_mult     = 1.0 (avg ≤5m), 0.9 (≤15m), 0.75 (≤30m), ≥0.5 (>30m)
+  quality_score per task:
+    success:         1.0 - 0.15 × steer_count  (min 0.70)
+    steered:         0.5 - 0.10 × (steer_count - 1)  (min 0.30)
+    failure/timeout: 0.0
+
+  speed_mult  = 1.0 (avg ≤5m), 0.9 (≤15m), 0.75 (≤30m), ≥0.5 (>30m)
 
   Recency weights: tasks within --window hours count 2×,
                    within 7 days count 1×, older count 0.5×.
