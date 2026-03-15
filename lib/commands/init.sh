@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fleet init · Interactive configuration setup with auto-PATH
+# fleet init: Interactive configuration setup with auto-PATH
 
 cmd_init() {
     out_header "Fleet Setup"
@@ -159,7 +159,7 @@ _ensure_path() {
         if [ -f "$rc" ]; then
             if ! grep -q '\.local/bin' "$rc" 2>/dev/null; then
                 echo '' >> "$rc"
-                echo '# Added by fleet · https://github.com/oguzhnatly/fleet' >> "$rc"
+                echo '# Added by fleet: https://github.com/oguzhnatly/fleet' >> "$rc"
                 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
                 out_ok "Added $bin_dir to PATH in $(basename "$rc")"
                 added=true

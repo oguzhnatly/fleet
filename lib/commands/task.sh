@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet task · Dispatch a task to a named agent via its gateway
+# fleet task: Dispatch a task to a named agent via its gateway
 # Usage: fleet task <agent> "<prompt>" [--type code|review|research|deploy|qa] [--timeout 30] [--no-wait]
 
 # ── Infer task type from prompt keywords ──────────────────────────────────────
@@ -94,7 +94,7 @@ cmd_task() {
     echo ""
 
     if [ "$no_wait" = "true" ]; then
-        # Fire and forget — dispatch without waiting for response
+        # Fire and forget: dispatch without waiting for response
         python3 -u - "$port" "$token" "$prompt" "$agent" <<'PY'
 import subprocess, sys, json
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet backup / fleet restore · Config backup and restoration
+# fleet backup / fleet restore: Config backup and restoration
 
 cmd_backup() {
     local backup_dir

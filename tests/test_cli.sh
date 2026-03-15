@@ -56,6 +56,14 @@ echo "Config"
 FLEET_CONFIG=/nonexistent/path assert_ok "health without config works" bash "$FLEET" health
 
 echo ""
+echo "JSON Validation"
+for f in "$FLEET_ROOT"/examples/*/config.json "$FLEET_ROOT"/templates/configs/*.json; do
+    if [ -f "$f" ]; then
+        assert_ok "valid JSON: $(basename "$(dirname "$f")")/$(basename "$f")" python3 -c "import json; json.load(open('$f'))"
+    fi
+done
+
+echo ""
 echo "Trust Engine (v3)"
 assert_ok "trust.sh syntax" bash -n "$FLEET_ROOT/lib/core/trust.sh"
 assert_ok "trust command syntax" bash -n "$FLEET_ROOT/lib/commands/trust.sh"
@@ -65,9 +73,11 @@ assert_ok "score help exits 0" bash "$FLEET" score --help
 assert_output_contains "help contains trust" "fleet trust" bash "$FLEET" help
 assert_output_contains "help contains score" "fleet score" bash "$FLEET" help
 
+# trust with no log: verify graceful exit
 FLEET_LOG=/nonexistent/log.jsonl assert_ok "trust with no log" bash "$FLEET" trust
 FLEET_LOG=/nonexistent/log.jsonl assert_ok "score with no log" bash "$FLEET" score
 
+# trust with minimal synthetic log
 _TMP_LOG=$(mktemp /tmp/fleet-test-log.XXXXXX.jsonl)
 cat > "$_TMP_LOG" <<'LOGDATA'
 {"task_id":"aaa00001","agent":"coder","task_type":"code","prompt":"add pagination","dispatched_at":"2026-03-15T10:00:00Z","completed_at":"2026-03-15T10:08:00Z","outcome":"success","steer_count":0}
@@ -88,20 +98,17 @@ FLEET_CONFIG="$_EXAMPLE_CFG" FLEET_LOG="$_TMP_LOG" \
 
 rm -f "$_TMP_LOG"
 
+# update command
 assert_ok "update.sh syntax" bash -n "$FLEET_ROOT/lib/commands/update.sh"
 assert_ok "update help exits 0" bash "$FLEET" update --help
 assert_output_contains "help contains update" "fleet update" bash "$FLEET" help
 assert_ok "update check exits 0 with no network" bash -c "
     FLEET_STATE_DIR=\$(mktemp -d) bash \"$FLEET\" update --check 2>/dev/null; true
 "
-
-echo ""
-echo "JSON Validation"
-for f in "$FLEET_ROOT"/examples/*/config.json "$FLEET_ROOT"/templates/configs/*.json; do
-    if [ -f "$f" ]; then
-        assert_ok "valid JSON: $(basename "$(dirname "$f")")/$(basename "$f")" python3 -c "import json; json.load(open('$f'))"
-    fi
-done
+assert_ok "update install dir detection" bash -c "
+    type fleet >/dev/null 2>&1 || export PATH=\"\$PATH:\$(dirname \"$FLEET\")\"
+    true
+"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

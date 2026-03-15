@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet log · Append-only structured log of all fleet dispatches and outcomes
+# fleet log: Append-only structured log of all fleet dispatches and outcomes
 # Schema per entry (JSONL): task_id, agent, task_type, prompt, dispatched_at,
 #   completed_at, outcome, steer_count
 
@@ -126,7 +126,7 @@ with open(log_file, "w") as f:
 PY
 }
 
-# ── cmd_log · Display fleet log ──────────────────────────────────────────────
+# ── cmd_log: Display fleet log ──────────────────────────────────────────────
 cmd_log() {
     local filter_agent="" filter_outcome="" limit=50 flag
 

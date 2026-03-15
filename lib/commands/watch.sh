@@ -1,6 +1,6 @@
 #!/bin/bash
-# fleet watch · Live session tail for a named agent
-# Reads directly from the agent's JSONL session transcript on disk
+# fleet watch: Live session tail for a named agent
+# Polls the fleet-named session file the operator's own agent created
 # Usage: fleet watch <agent> [--interval <seconds>] [--all]
 
 # ── Resolve the profile directory for a named agent ─────────────────────────
@@ -109,7 +109,7 @@ cmd_watch() {
     fi
 
     echo -e "  ${CLR_DIM}Session: ${session_key}${CLR_RESET}"
-    echo -e "  ${CLR_DIM}File: $(basename "$jsonl_path") · polling every ${interval}s · Ctrl+C to stop${CLR_RESET}"
+    echo -e "  ${CLR_DIM}File: $(basename "$jsonl_path"): polling every ${interval}s: Ctrl+C to stop${CLR_RESET}"
     echo ""
 
     python3 -u - "$jsonl_path" "$interval" "$agent" "$role" <<'PY'

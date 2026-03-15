@@ -42,6 +42,8 @@ if [ "${1:-}" = "--version" ] || [ "${1:-}" = "-v" ]; then
 fi
 
 # ── Background version check (once per 24h, non-blocking) ────────────────────
+# Writes the latest GitHub release tag to the state cache so the banner
+# function in update.sh can display a warning without adding any latency.
 _fleet_bg_version_check() {
     local cache="${FLEET_STATE_DIR:-${HOME}/.fleet/state}/update_check.json"
     local now
@@ -85,6 +87,7 @@ BGPY
     disown
 }
 
+# Skip banner and version check for update/--version/help subcommands
 _fleet_cmd="${1:-help}"
 if [[ "$_fleet_cmd" != "update" && "$_fleet_cmd" != "--version" &&
       "$_fleet_cmd" != "-v"      && "$_fleet_cmd" != "help"       &&
@@ -113,6 +116,11 @@ cmd_help() {
     fleet sitrep [hours]      Structured status report with delta tracking
     fleet audit               Check for misconfigurations and risks
 
+  TRUST (v3)
+    fleet trust [--window H]          Trust matrix for all agents
+    fleet score [<agent>]             Per-task-type reliability breakdown
+    fleet score <agent> --type code   Filter score to one task type
+
   DEVELOPMENT
     fleet ci [filter]         GitHub CI status across repos
     fleet skills              List installed ClawHub skills
@@ -121,16 +129,11 @@ cmd_help() {
     fleet backup              Backup all configs
     fleet restore             Restore from latest backup
     fleet init                Interactive setup (auto-links PATH)
-
-  TRUST (v3)
-    fleet trust [--window H]          Trust matrix for all agents
-    fleet score [<agent>]             Per-task-type reliability breakdown
-    fleet score <agent> --type code   Filter score to one task type
+    fleet update              Upgrade to the latest fleet release
 
   OPTIONS
     fleet --version           Show version
     fleet help                This help message
-    fleet update              Upgrade to the latest fleet release
 
   CONFIG
     Default: ~/.fleet/config.json

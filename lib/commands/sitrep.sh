@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet sitrep · Structured status report with delta tracking
+# fleet sitrep: Structured status report with delta tracking
 
 cmd_sitrep() {
     local hours="${1:-4}"
@@ -247,12 +247,13 @@ if linear:
     if parts:
         print(f"{BOLD}Linear{N}    {' | '.join(parts)}")
 
-
 # Trust summary (v3)
+trust_file = os.path.join(os.path.dirname(config_path), "..", ".fleet", "log.jsonl")
 log_f = os.environ.get("FLEET_LOG", os.path.expanduser("~/.fleet/log.jsonl"))
 if os.path.exists(log_f):
     agents_cfg = [a["name"] for a in config.get("agents", [])]
     if agents_cfg:
+        # Compute a quick per-agent trust score from the log
         from datetime import datetime as _dt, timezone as _tz
         _now = _dt.now(_tz.utc)
         _wh  = float(config.get("trust", {}).get("windowHours", 72))
@@ -260,8 +261,8 @@ if os.path.exists(log_f):
         def _tq(outcome, steers):
             steers = int(steers)
             if outcome == "success":  return max(0.7, 1.0 - 0.15 * steers)
-            if outcome == "steered":  return max(0.3, 0.5 - 0.10 * max(0, steers - 1))
-            if outcome in ("failure", "timeout"): return 0.0
+            if outcome == "steered":  return max(0.3, 0.5 - 0.10 * max(0, steers-1))
+            if outcome in ("failure","timeout"): return 0.0
             return None
 
         _entries = {}
@@ -271,7 +272,7 @@ if os.path.exists(log_f):
                 if not _ln: continue
                 try:
                     _e = json.loads(_ln)
-                    _a = _e.get("agent", "")
+                    _a = _e.get("agent","")
                     _entries.setdefault(_a, []).append(_e)
                 except Exception: pass
 
@@ -281,10 +282,10 @@ if os.path.exists(log_f):
             _tw = _qw = 0.0
             for _e in _elist:
                 try:
-                    _d = _dt.strptime(_e.get("dispatched_at", "")[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=_tz.utc)
+                    _d = _dt.strptime(_e.get("dispatched_at","")[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=_tz.utc)
                     _age = (_now - _d).total_seconds() / 3600.0
                     _w = 2.0 if _age <= _wh else (1.0 if _age <= 168 else 0.5)
-                    _q = _tq(_e.get("outcome", ""), _e.get("steer_count", 0))
+                    _q = _tq(_e.get("outcome",""), _e.get("steer_count",0))
                     if _q is None: continue
                     _tw += _w; _qw += _w * _q
                 except Exception: pass
@@ -295,7 +296,7 @@ if os.path.exists(log_f):
             _parts = []
             for _n, _s in sorted(_scores.items(), key=lambda x: x[1], reverse=True):
                 _c = G if _s >= 0.8 else (Y if _s >= 0.6 else R)
-                _parts.append(f"{_c}{_n}:{round(_s * 100)}%{N}")
+                _parts.append(f"{_c}{_n}:{round(_s*100)}%{N}")
             print(f"{BOLD}Trust{N}     {' | '.join(_parts)}")
 
 print()

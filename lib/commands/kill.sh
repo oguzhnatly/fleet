@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet kill · Send a graceful stop signal to an agent session
+# fleet kill: Send a graceful stop signal to an agent session
 # Sends a termination message to the agent's fleet session
 # Usage: fleet kill <agent> [--force]
 

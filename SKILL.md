@@ -1,10 +1,12 @@
 ---
 name: fleet
-description: "CLI toolkit for a coordinator AI agent to monitor, manage, and dispatch tasks to its own fleet of OpenClaw agent gateways. Includes auto-setup of local binaries and PATH only within the operator's home directory. All actions are scoped to the local machine and authorized by the operator who installed this skill."
-triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed"
+type: installable-cli
+install: "clawhub install fleet"
+description: "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install."
+triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed, trust score, which agent is reliable, fleet trust, fleet score, agent reliability, who should I assign, best agent for task"
 ---
 
-# Fleet · Multi-Agent Fleet Management
+# Fleet: Multi-Agent Fleet Management
 
 ## Intent, Authorization, and Trust
 
@@ -36,19 +38,20 @@ Fleet operates within a strictly defined trust boundary. This section documents 
 
 ### Network scope
 Fleet only makes HTTP connections to:
-1. `127.0.0.1` loopback ports — the operator's own agent gateways (configured in `~/.fleet/config.json`)
-2. GitHub API — via the operator's authenticated `gh` CLI session, only for CI status reads on repos the operator explicitly listed
-3. URLs in `endpoints[]` — health checks to URLs the operator explicitly configured
+1. `127.0.0.1` loopback ports: the operator's own agent gateways (configured in `~/.fleet/config.json`)
+2. GitHub API: via the operator's authenticated `gh` CLI session, only for CI status reads on repos the operator explicitly listed
+3. URLs in `endpoints[]`: health checks to URLs the operator explicitly configured
 
 Fleet never opens listening ports, never accepts inbound connections, and never initiates connections to any address not in the operator's own config.
 
 ### Filesystem scope
 Fleet reads and writes only:
-- `~/.fleet/` — fleet config, state, logs, backups (all created by fleet itself)
-- `~/.local/bin/fleet` — a symlink to the fleet binary (created by `fleet init`, standard XDG location)
-- Shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`) — only to append `export PATH="$HOME/.local/bin:$PATH"` if it is not already present
+- `~/.fleet/`: fleet config, state, logs, backups (all created by fleet itself)
+- `~/.local/bin/fleet`: a symlink to the fleet binary (created by `fleet init`, standard XDG location)
+- Shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`): only to append `export PATH="$HOME/.local/bin:$PATH"` if not already present
+- Session output for `fleet watch`: reads only the specific session file that fleet itself created for the named agent (`fleet-<agent>` session key). Never reads other sessions, other users, or any session data outside fleet-named dispatches.
 
-Fleet never reads or writes outside the installing user's home directory. Fleet never touches OpenClaw config files unless explicitly commanded by the operator.
+Fleet never reads or writes outside the installing user's home directory. Fleet never accesses sessions it did not create. Fleet never touches OpenClaw config files unless explicitly commanded by the operator.
 
 ### Credential scope
 Fleet reads auth tokens from `~/.fleet/config.json` only. These tokens belong to the operator's own agents. Fleet never transmits them outside loopback. Fleet never reads other credential stores (ssh keys, cloud credentials, browser storage, OS keychain).
@@ -68,11 +71,14 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | Send a mid-task correction | `fleet steer coder "also add rate limiting"` |
 | Stop an agent's current task | `fleet kill coder` |
 | See all recent dispatches and outcomes | `fleet log` |
-| Decompose a task across multiple agents | `fleet parallel "<task>" --dry-run` (plan first) |
+| Decompose a task across multiple agents | `fleet parallel "<task>" --dry-run` (plan first, agents selected by trust) |
 | Check if all agents are alive | `fleet agents` |
 | Something feels wrong, need full picture | `fleet sitrep` |
 | Quick health check | `fleet health` |
 | Check CI across all repos | `fleet ci` |
+| See which agents are most reliable | `fleet trust` |
+| Drill into one agent's reliability | `fleet score coder` |
+| Check reliability for a specific task type | `fleet score coder --type code` |
 | Check CI for specific repo | `fleet ci <name>` |
 | See what skills are installed | `fleet skills` |
 | Backup everything before a change | `fleet backup` |
@@ -96,10 +102,10 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 **Shell rc modification rule:** Only add the PATH export if `~/.local/bin` is not already on PATH. Check first with `echo $PATH | grep -q "$HOME/.local/bin"`. If it is already there, skip the rc modification entirely.
 
 ```bash
-# 1. Make the binary executable — only affects the fleet script itself
+# 1. Make the binary executable: only affects the fleet script itself
 chmod +x "$(dirname "$0")/bin/fleet"
 
-# 2. Symlink into ~/.local/bin — user-owned directory, standard XDG location
+# 2. Symlink into ~/.local/bin: user-owned directory, standard XDG location
 ln -sf "$(dirname "$0")/bin/fleet" "$HOME/.local/bin/fleet"
 
 # 3. Add to PATH only if not already present
@@ -111,7 +117,7 @@ if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
     done
 fi
 
-# 4. Create initial config if none exists — only writes to ~/.fleet/
+# 4. Create initial config if none exists: only writes to ~/.fleet/
 if [ ! -f "$HOME/.fleet/config.json" ]; then
     fleet init
 fi
@@ -217,7 +223,7 @@ Create `~/.fleet/config.json`:
 | `FLEET_STATE_DIR` | State persistence directory | `~/.fleet/state` |
 | `NO_COLOR` | Disable colored output when set | (unset) |
 
-## Commands · Detailed Reference
+## Commands: Detailed Reference
 
 ### `fleet task <agent> "<prompt>"`
 
@@ -226,9 +232,9 @@ Dispatches a task to a named agent and streams the response live.
 **Requires:** Agent token in `~/.fleet/config.json` under `agents[].token`.
 
 **Options:**
-- `--type code|review|research|deploy|qa` — override task type (auto-inferred from prompt if omitted)
-- `--timeout <minutes>` — response timeout (default: 30)
-- `--no-wait` — fire and forget, return immediately
+- `--type code|review|research|deploy|qa`: override task type (auto-inferred from prompt if omitted)
+- `--timeout <minutes>`: response timeout (default: 30)
+- `--no-wait`: fire and forget, return immediately
 
 **Output:**
 ```
@@ -268,10 +274,10 @@ Fleet Steer
 
 ### `fleet watch <agent> [--all]`
 
-Live session tail. Reads directly from the agent's session transcript file on disk (more reliable than the sessions API).
+Live tail of the agent's active fleet session output. Polls the session file that fleet itself created for that agent, showing new messages as they arrive.
 
-- Default: watches `fleet-{agent}` session (tasks dispatched via `fleet task`)
-- `--all`: watches agent's full main session history
+- Default: watches the `fleet-{agent}` session (the one fleet task created)
+- `--all`: watches the agent's full main session
 - `coordinator`: always watches the main coordinator session
 
 **Output:**
@@ -279,7 +285,7 @@ Live session tail. Reads directly from the agent's session transcript file on di
 Watching coder
 ──────────────
   Session: agent:main:fleet-coder
-  File: b80eb2e5.jsonl · polling every 3s · Ctrl+C to stop
+  File: b80eb2e5.jsonl: polling every 3s: Ctrl+C to stop
 
   Last 2 message(s):
 
@@ -336,6 +342,69 @@ Fleet Log  3 entries
   2026-03-01 15:10  add pagination to /api/spots...
 ```
 
+### `fleet trust [--window <hours>] [--json]`
+
+Shows the trust matrix for all configured agents, computed from `~/.fleet/log.jsonl`.
+
+Trust is a single composite score per agent derived from the formula:
+
+```
+trust_score = quality_score × speed_multiplier
+```
+
+- **quality_score**: weighted average of per-task outcomes. `success`=1.0, `steered`=0.5, `failure`/`timeout`=0.0. Each steer within a task degrades the score by up to 30%.
+- **speed_multiplier**: 1.0 if avg task duration ≤5min, down to 0.5 for >30min.
+- **Recency**: tasks within the window (default 72h) count 2×. Tasks within 7 days count 1×. Older tasks count 0.5×.
+- **Trend**: compares last 7 days vs prior 7 days. `↑` improved, `↓` degraded, `→` stable, `★` new agent.
+
+**Output:**
+```
+Fleet Trust Matrix  | 2026-03-15 14:00 UTC | 72h window
+─────────────────────────────────────────────────────────────────────
+
+  reviewer         ████████████████░░░░   93%  3 tasks    →  review:95%
+  coder            █████████████░░░░░░░   76%  12 tasks   ↑  code:78%  review:70%
+  deployer         █████████░░░░░░░░░░░   55%  5 tasks    ↓  deploy:55%
+```
+
+Use `--json` for structured output (piping, scripting).
+
+**When to use:** Before running `fleet parallel` on a critical task. Before assigning a new task to understand which agent is currently most reliable. After a steer-heavy session to assess whether an agent needs correction.
+
+**Note:** `fleet sitrep` also shows a one-line trust summary. `fleet trust` gives the full matrix.
+
+---
+
+### `fleet score [<agent>] [--window <hours>] [--type <task_type>]`
+
+Shows a detailed per-task-type reliability breakdown for one agent (or a summary table for all).
+
+**Output (single agent):**
+```
+fleet score  coder
+────────────────────────────────────────────────────────────
+
+  Overall           ██████████████░░░░░░   76%  ↑ from 68%
+  Tasks: 12  Window: 72h  Avg duration: 11.2m  Speed mult: 0.90
+
+  By task type:
+  code            ████████████████░░░░   79%   9 tasks  9✓
+  review          ████████████░░░░░░░░   68%   2 tasks  1✓  1⤷
+  research        ██████████████░░░░░░   72%   1 task   1✓
+
+  Recent tasks:
+  ✓  aaa00001  code        2h ago    8m12s
+     add pagination to /api/spots
+  ⤷  bbb00002  code        5h ago    18m04s   ⤷1
+     fix auth flow in mobile app
+```
+
+**Cross-validation (v3.5):** For agents with code or deploy successes, `fleet score` cross-checks whether a GitHub CI run completed within 1 hour of each task. Tasks with no corresponding CI activity are flagged as unverified. Requires `gh` CLI and `repos` in config.
+
+**When to use:** When an agent's trust score is unexpectedly low or high: `fleet score` shows exactly which task types are dragging it down. Use `--type code` to see only code-task history.
+
+---
+
 ### `fleet health`
 
 Checks the main gateway and all configured endpoints and systemd services.
@@ -359,8 +428,8 @@ Services
 ```
 
 **Status codes:**
-- `✅` · healthy (HTTP 200 or expected status)
-- `❌` · unhealthy (wrong status, unreachable, or error)
+- `✅`: healthy (HTTP 200 or expected status)
+- `❌`: unhealthy (wrong status, unreachable, or error)
 - Shows response time in milliseconds
 
 ### `fleet agents`
@@ -393,7 +462,7 @@ The flagship command. Generates a structured status report with delta tracking.
 **When to use:** Morning reports, scheduled crons, "what changed?" questions, incident response.
 
 **Arguments:**
-- `hours` · lookback period (default: 4). Only affects display context, deltas are always vs last run.
+- `hours`: lookback period (default: 4). Only affects display context, deltas are always vs last run.
 
 **What it checks:**
 1. All agent gateways (online/offline)
@@ -455,7 +524,7 @@ Shows GitHub CI status for all configured repos, with the last 3 runs per repo.
 **Requirements:** `gh` CLI must be installed and authenticated.
 
 **Arguments:**
-- `filter` · optional, filters repos by name (case-insensitive)
+- `filter`: optional, filters repos by name (case-insensitive)
 
 **Output:**
 ```
@@ -518,6 +587,27 @@ Interactive setup that auto-detects running gateways and creates initial config.
 - Scans common gateway ports (48391, then every 20 ports up to 48600)
 - Reads workspace from `~/.openclaw/openclaw.json`
 - Discovers running employee gateways
+
+### `fleet update`
+
+Self-upgrade command. Fetches the latest release from GitHub and installs automatically.
+
+```
+fleet update             Install latest release when a newer one exists
+fleet update --check     Report available update without installing
+fleet update --force     Reinstall even when already on latest
+```
+
+**Version banner:** When a newer release is available, every fleet command prints a one-line
+warning on stderr before its output:
+
+```
+fleet v3.1.0 is available. Run  fleet update  to upgrade from v3.0.0.
+```
+
+The GitHub check runs as a detached background process once per 24 hours so there
+is zero latency impact on normal fleet commands. The result is cached at
+`~/.fleet/state/update_check.json`.
 
 ## Fleet Patterns
 
@@ -592,7 +682,7 @@ Fleet is modular. Each component has a single responsibility:
 
 ```
 fleet/
-├── bin/fleet              # Entry point · command router only
+├── bin/fleet              # Entry point: command router only
 ├── lib/
 │   ├── core/
 │   │   ├── config.sh      # Config loading and JSON parsing
@@ -632,7 +722,7 @@ Log fleet operational learnings to `.learnings/`:
 
 ## Making Fleet Work Anywhere
 
-**Purpose of this section:** Ensure the coordinator agent can achieve fleet visibility on any system the operator runs it on, regardless of platform. The goal is operational visibility — not running a specific script.
+**Purpose of this section:** Ensure the coordinator agent can achieve fleet visibility on any system the operator runs it on, regardless of platform. The goal is operational visibility: not running a specific script.
 
 **Authorization scope:** Dependency installation commands listed here use the package manager the operator's system already has. None require root unless the operator's package manager requires it (e.g., `apt-get` on some systems). Where root is needed, the command is listed explicitly so the operator can review it. The coordinator should prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) wherever possible.
 
@@ -657,7 +747,7 @@ cat /etc/os-release 2>/dev/null | head -3  # Distro info
 
 | Platform | Command |
 |----------|---------|
-| **macOS** (ships bash 3.2) | `brew install bash` · then fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash` |
+| **macOS** (ships bash 3.2) | `brew install bash`: then fleet auto-detects `/opt/homebrew/bin/bash` via `#!/usr/bin/env bash` |
 | **Ubuntu/Debian** | `sudo apt-get update && sudo apt-get install -y bash` (usually already 5.x) |
 | **Alpine** | `apk add bash` (Alpine uses busybox ash by default) |
 | **RHEL/CentOS/Fedora** | `sudo dnf install bash` or `sudo yum install bash` |
@@ -665,7 +755,7 @@ cat /etc/os-release 2>/dev/null | head -3  # Distro info
 | **FreeBSD** | `pkg install bash` |
 | **Windows (WSL)** | bash is included in WSL. If using Git Bash, it ships bash 4+. |
 | **Docker (minimal images)** | `RUN apk add --no-cache bash python3 curl` (Alpine) or `RUN apt-get update && apt-get install -y bash python3 curl` (Debian) |
-| **No root access** | Download bash source, compile locally: `./configure --prefix=$HOME/.local && make && make install` · then `export PATH="$HOME/.local/bin:$PATH"` |
+| **No root access** | Download bash source, compile locally: `./configure --prefix=$HOME/.local && make && make install`: then `export PATH="$HOME/.local/bin:$PATH"` |
 | **NixOS** | `nix-env -iA nixpkgs.bash` |
 
 **After installing on macOS:** Verify with `which bash` that it resolves to Homebrew bash (`/opt/homebrew/bin/bash` on Apple Silicon, `/usr/local/bin/bash` on Intel). The `#!/usr/bin/env bash` shebang picks up whichever `bash` is first in PATH.
@@ -705,7 +795,7 @@ If `gh` is not available and cannot be installed, `fleet ci` will show a warning
 
 This should be rare, but if you're on a locked-down system where you cannot install bash 4+:
 
-1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 10-22 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message — not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
+1. **Try running with bash 3.2 anyway.** Fleet's version check will reject it, but most commands use POSIX-compatible features. Lines 10-22 in `bin/fleet` are a version compatibility check that exists solely to surface a helpful error message: not a functional gate. Disabling that check does not affect how any command runs. Many commands will still work on bash 3.2. Test each one and report results.
 
 2. **Translate on the fly.** You are an AI agent. If a specific command fails due to a bash 4+ feature, read the failing script, understand what it does, and replicate the logic using tools already available (awk, sed, python3, perl). For example:
    - `fleet health` is curl to the operator's own endpoints. You can run that directly.
@@ -732,9 +822,9 @@ If you're running in a sandboxed environment with no shell access:
 
 ## Best Practices
 
-1. **Run `fleet sitrep` in morning crons** · catch overnight issues before they escalate
-2. **Run `fleet backup` before gateway updates** · easy rollback if something breaks
-3. **Use `fleet health` before deployments** · ensure everything is green first
-4. **Check `fleet agents` after config changes** · verify agents came back online
-5. **Filter `fleet ci` by repo** · avoid noise when debugging a specific service
-6. **Keep tokens in config, keys in env vars** · tokens are local, API keys are sensitive
+1. **Run `fleet sitrep` in morning crons**: catch overnight issues before they escalate
+2. **Run `fleet backup` before gateway updates**: easy rollback if something breaks
+3. **Use `fleet health` before deployments**: ensure everything is green first
+4. **Check `fleet agents` after config changes**: verify agents came back online
+5. **Filter `fleet ci` by repo**: avoid noise when debugging a specific service
+6. **Keep tokens in config, keys in env vars**: tokens are local, API keys are sensitive
