@@ -28,6 +28,7 @@ FLEET_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$FLEET_ROOT/lib/core/config.sh"
 source "$FLEET_ROOT/lib/core/output.sh"
 source "$FLEET_ROOT/lib/core/state.sh"
+source "$FLEET_ROOT/lib/core/trust.sh"
 
 # ── Load commands ───────────────────────────────────────────────────────────
 for cmd_file in "$FLEET_ROOT/lib/commands/"*.sh; do
@@ -40,17 +41,69 @@ if [ "${1:-}" = "--version" ] || [ "${1:-}" = "-v" ]; then
     exit 0
 fi
 
+# ── Background version check (once per 24h, non-blocking) ────────────────────
+_fleet_bg_version_check() {
+    local cache="${FLEET_STATE_DIR:-${HOME}/.fleet/state}/update_check.json"
+    local now
+    now=$(date +%s)
+    if [[ -f "$cache" ]]; then
+        local age
+        age=$(python3 -c "
+import json, time
+try:
+    d = json.load(open('$cache'))
+    print(int(time.time()) - d.get('ts', 0))
+except Exception:
+    print(999999)
+" 2>/dev/null || echo 999999)
+        [[ "$age" -lt 86400 ]] && return 0
+    fi
+    (
+        mkdir -p "${FLEET_STATE_DIR:-${HOME}/.fleet/state}"
+        local api="https://api.github.com/repos/${FLEET_UPDATE_REPO:-oguzhnatly/fleet}/releases/latest"
+        python3 - "$api" "$cache" "$now" <<'BGPY'
+import urllib.request, json, sys, os
+
+api_url    = sys.argv[1]
+cache_path = sys.argv[2]
+ts         = int(sys.argv[3])
+
+try:
+    req = urllib.request.Request(api_url, headers={"User-Agent": "fleet-cli/updater"})
+    with urllib.request.urlopen(req, timeout=8) as r:
+        data = json.loads(r.read())
+    tag = data.get("tag_name", "")
+    url = data.get("tarball_url", "")
+    if tag:
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, "w") as f:
+            json.dump({"tag": tag, "url": url, "ts": ts}, f)
+except Exception:
+    pass
+BGPY
+    ) &>/dev/null &
+    disown
+}
+
+_fleet_cmd="${1:-help}"
+if [[ "$_fleet_cmd" != "update" && "$_fleet_cmd" != "--version" &&
+      "$_fleet_cmd" != "-v"      && "$_fleet_cmd" != "help"       &&
+      "$_fleet_cmd" != "--help"  && "$_fleet_cmd" != "-h" ]]; then
+    _fleet_bg_version_check
+    fleet_update_banner 2>/dev/null || true
+fi
+
 # ── Help ────────────────────────────────────────────────────────────────────
 cmd_help() {
     cat <<'HELP'
 
-  ⛵ fleet — Multi-agent fleet management for OpenClaw
+  ⛵ fleet: Multi-agent fleet management for OpenClaw
 
   DISPATCH
     fleet task <agent> "<prompt>"     Dispatch a task to an agent
     fleet steer <agent> "<message>"   Send mid-session correction
     fleet watch <agent>               Live session tail
-    fleet parallel "<task>"           Decompose and dispatch in parallel
+    fleet parallel "<task>"           Decompose and dispatch in parallel (trust-weighted)
     fleet kill <agent>                Send graceful stop signal
     fleet log [--agent X] [--limit N] View dispatch history
 
@@ -69,13 +122,20 @@ cmd_help() {
     fleet restore             Restore from latest backup
     fleet init                Interactive setup (auto-links PATH)
 
+  TRUST (v3)
+    fleet trust [--window H]          Trust matrix for all agents
+    fleet score [<agent>]             Per-task-type reliability breakdown
+    fleet score <agent> --type code   Filter score to one task type
+
   OPTIONS
     fleet --version           Show version
     fleet help                This help message
+    fleet update              Upgrade to the latest fleet release
 
   CONFIG
     Default: ~/.fleet/config.json
     Override: FLEET_CONFIG=/path/to/config.json
+    Trust window: trust.windowHours (default: 72)
 
   Docs: https://github.com/oguzhnatly/fleet
 
@@ -99,6 +159,9 @@ case "${1:-help}" in
     backup)              cmd_backup ;;
     restore)             cmd_restore ;;
     init|setup)          cmd_init ;;
+    trust)               cmd_trust "${@:2}" ;;
+    score)               cmd_score "${@:2}" ;;
+    update)              cmd_update "${@:2}" ;;
     help|--help|-h)      cmd_help ;;
     *)
         echo "  Unknown command: $1"

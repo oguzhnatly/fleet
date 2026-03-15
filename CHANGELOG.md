@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] · 2026-03-15
+
+### Added
+- `fleet trust [--window H] [--json]`: trust matrix showing composite reliability score, trend indicator, per-task-type breakdown, and task counts for every configured agent
+- `fleet score [<agent>] [--window H] [--type T]`: per-agent reliability drill-down with recent history and v3.5 CI cross-validation
+- `fleet update [--check] [--force]`: self-upgrade from latest GitHub release; background version check on every invocation with zero-latency banner
+- `lib/core/trust.sh`: trust scoring engine with three public functions: `trust_score_agent`, `trust_best_for_type`, `trust_all_json`
+- `fleet parallel` now uses trust-weighted agent selection per task type; falls back to heuristics when no log data exists
+
+### Changed
+- `fleet sitrep` now appends a one-line trust summary showing all agents color-coded by score
+- Version bumped to 3.0.0
+
+---
+
 ## [2.1.0] · 2026-03-15
 
 ### Fixed

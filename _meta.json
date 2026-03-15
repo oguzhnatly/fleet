@@ -1,7 +1,7 @@
 {
   "slug": "fleet",
-  "version": "2.1.0",
-  "description": "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install.",
+  "version": "3.0.0",
+  "description": "Multi-agent fleet management for OpenClaw \u2014 dispatch, monitor, trust-score, and auto-update your AI agent cluster",
   "requires": {
     "binaries": [
       "bash",
@@ -81,5 +81,10 @@
       "~/.fleet/config.json (agent gateway auth tokens)"
     ],
     "hardening": "chmod 600 ~/.fleet/config.json and chmod 700 ~/.openclaw ~/.openclaw-* as documented in SECURITY.md"
-  }
+  },
+  "capabilities": [
+    "fleet trust",
+    "fleet score",
+    "fleet update"
+  ]
 }

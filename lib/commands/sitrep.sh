@@ -247,6 +247,57 @@ if linear:
     if parts:
         print(f"{BOLD}Linear{N}    {' | '.join(parts)}")
 
+
+# Trust summary (v3)
+log_f = os.environ.get("FLEET_LOG", os.path.expanduser("~/.fleet/log.jsonl"))
+if os.path.exists(log_f):
+    agents_cfg = [a["name"] for a in config.get("agents", [])]
+    if agents_cfg:
+        from datetime import datetime as _dt, timezone as _tz
+        _now = _dt.now(_tz.utc)
+        _wh  = float(config.get("trust", {}).get("windowHours", 72))
+
+        def _tq(outcome, steers):
+            steers = int(steers)
+            if outcome == "success":  return max(0.7, 1.0 - 0.15 * steers)
+            if outcome == "steered":  return max(0.3, 0.5 - 0.10 * max(0, steers - 1))
+            if outcome in ("failure", "timeout"): return 0.0
+            return None
+
+        _entries = {}
+        with open(log_f) as _lf:
+            for _ln in _lf:
+                _ln = _ln.strip()
+                if not _ln: continue
+                try:
+                    _e = json.loads(_ln)
+                    _a = _e.get("agent", "")
+                    _entries.setdefault(_a, []).append(_e)
+                except Exception: pass
+
+        _scores = {}
+        for _n in agents_cfg:
+            _elist = _entries.get(_n, [])
+            _tw = _qw = 0.0
+            for _e in _elist:
+                try:
+                    _d = _dt.strptime(_e.get("dispatched_at", "")[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=_tz.utc)
+                    _age = (_now - _d).total_seconds() / 3600.0
+                    _w = 2.0 if _age <= _wh else (1.0 if _age <= 168 else 0.5)
+                    _q = _tq(_e.get("outcome", ""), _e.get("steer_count", 0))
+                    if _q is None: continue
+                    _tw += _w; _qw += _w * _q
+                except Exception: pass
+            if _tw > 0:
+                _scores[_n] = round(_qw / _tw, 2)
+
+        if _scores:
+            _parts = []
+            for _n, _s in sorted(_scores.items(), key=lambda x: x[1], reverse=True):
+                _c = G if _s >= 0.8 else (Y if _s >= 0.6 else R)
+                _parts.append(f"{_c}{_n}:{round(_s * 100)}%{N}")
+            print(f"{BOLD}Trust{N}     {' | '.join(_parts)}")
+
 print()
 SITREP_PY
 }
