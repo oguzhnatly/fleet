@@ -22,7 +22,7 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ] 2>/dev/null; then
 fi
 
 # ── Resolve install directory ───────────────────────────────────────────────
-FLEET_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FLEET_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.." && pwd)"
 
 # ── Load core libraries ────────────────────────────────────────────────────
 source "$FLEET_ROOT/lib/core/config.sh"
