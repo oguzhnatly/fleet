@@ -2,6 +2,15 @@
 # fleet init: Interactive configuration setup with auto-PATH
 
 cmd_init() {
+    # ── Parse flags ─────────────────────────────────────────────────────────
+    local non_interactive=false
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --non-interactive|-n) non_interactive=true; shift ;;
+            *) shift ;;
+        esac
+    done
+
     out_header "Fleet Setup"
 
     local config_dir
@@ -22,25 +31,31 @@ cmd_init() {
         return
     fi
 
-    echo "  Creating fleet configuration..."
+    if [ "$non_interactive" = true ]; then
+        echo "  Creating fleet configuration (non-interactive: skipping gateway probe)..."
+    else
+        echo "  Creating fleet configuration..."
+    fi
     echo ""
 
     mkdir -p "$config_dir"
 
-    # Auto-detect OpenClaw gateway
+    # Auto-detect OpenClaw gateway (skipped in non-interactive mode)
     local detected_port=""
-    for port in 48391 3000 8080; do
-        local code
-        code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://127.0.0.1:$port/health" 2>/dev/null)
-        if [ "$code" = "200" ]; then
-            detected_port=$port
-            break
-        fi
-    done
+    if [ "$non_interactive" != true ]; then
+        for port in 48391 3000 8080; do
+            local code
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://127.0.0.1:$port/health" 2>/dev/null) || code=""
+            if [ "$code" = "200" ]; then
+                detected_port=$port
+                break
+            fi
+        done
+    fi
 
-    # Auto-detect workspace
+    # Auto-detect workspace (skipped in non-interactive mode)
     local detected_workspace=""
-    if [ -f "$HOME/.openclaw/openclaw.json" ]; then
+    if [ "$non_interactive" != true ] && [ -f "$HOME/.openclaw/openclaw.json" ]; then
         detected_workspace=$(python3 -c "
 import json
 with open('$HOME/.openclaw/openclaw.json') as f:
@@ -50,12 +65,13 @@ print(c.get('workspace', ''))
     fi
 
     # Build config
-    python3 - "$config_dir" "$detected_port" "$detected_workspace" <<'INIT_PY'
+    python3 - "$config_dir" "$detected_port" "$detected_workspace" "$non_interactive" <<'INIT_PY'
 import json, sys, os, subprocess
 
 config_dir = sys.argv[1]
 detected_port = sys.argv[2] or "48391"
 detected_workspace = sys.argv[3] or os.path.expanduser("~")
+non_interactive = sys.argv[4] == "true"
 
 config = {
     "workspace": detected_workspace,
@@ -77,35 +93,39 @@ config = {
 
 G = "\033[32m"; D = "\033[2m"; N = "\033[0m"
 
-print(f"  {G}✅{N} Main gateway detected on :{detected_port}")
+if non_interactive:
+    print(f"  {D}Coordinator placeholder set on :{detected_port} (no probe performed){N}")
+else:
+    print(f"  {G}✅{N} Main gateway detected on :{detected_port}")
 if detected_workspace:
     print(f"  {G}✅{N} Workspace: {detected_workspace}")
 
-# Scan for employee gateways
-# Check nearby ports (step 20) and also common ranges (48500-48700)
+# Scan for employee gateways (skipped in non-interactive mode)
 scanned = []
-gw = int(detected_port)
-scan_ports = set()
-# Nearby ports (gateway ± 200, step 20)
-for p in range(gw + 20, gw + 220, 20):
-    scan_ports.add(p)
-# Extended range for spaced-out setups (common: 48500-48700)
-for p in range(48400, 48700, 10):
-    if p != gw:
+if not non_interactive:
+    # Check nearby ports (step 20) and also common ranges (48500-48700)
+    gw = int(detected_port)
+    scan_ports = set()
+    # Nearby ports (gateway ± 200, step 20)
+    for p in range(gw + 20, gw + 220, 20):
         scan_ports.add(p)
+    # Extended range for spaced-out setups (common: 48500-48700)
+    for p in range(48400, 48700, 10):
+        if p != gw:
+            scan_ports.add(p)
 
-for port in sorted(scan_ports):
-    try:
-        r = subprocess.run(
-            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
-             "--max-time", "1", f"http://127.0.0.1:{port}/health"],
-            capture_output=True, text=True
-        )
-        if r.stdout.strip() in ("200", "401"):
-            scanned.append(port)
-            print(f"  {G}✅{N} Agent gateway found on :{port}")
-    except Exception:
-        pass
+    for port in sorted(scan_ports):
+        try:
+            r = subprocess.run(
+                ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+                 "--max-time", "1", f"http://127.0.0.1:{port}/health"],
+                capture_output=True, text=True
+            )
+            if r.stdout.strip() in ("200", "401"):
+                scanned.append(port)
+                print(f"  {G}✅{N} Agent gateway found on :{port}")
+        except Exception:
+            pass
 
 for port in scanned:
     config["agents"].append({

@@ -131,7 +131,7 @@ cmd_help() {
   OPERATIONS
     fleet backup              Backup all configs
     fleet restore             Restore from latest backup
-    fleet init                Interactive setup (auto-links PATH)
+    fleet init [-n]           Setup with auto-PATH; -n / --non-interactive skips gateway probe
     fleet update              Upgrade to the latest fleet release
 
   OPTIONS
@@ -164,7 +164,7 @@ case "${1:-help}" in
     skills)              cmd_skills ;;
     backup)              cmd_backup ;;
     restore)             cmd_restore ;;
-    init|setup)          cmd_init ;;
+    init|setup)          cmd_init "${@:2}" ;;
     trust)               cmd_trust "${@:2}" ;;
     score)               cmd_score "${@:2}" ;;
     update)              cmd_update "${@:2}" ;;
