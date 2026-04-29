@@ -1,6 +1,6 @@
 {
   "slug": "fleet",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "type": "installable-cli",
   "description": "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install.",
   "requires": {

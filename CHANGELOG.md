@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.5] · 2026-04-30
+
+### Fixed
+- `bin/fleet`: resolve `FLEET_ROOT` from the real path of the entry script so installs invoked through `~/.local/bin/fleet` work correctly after `fleet init`
+- Fixed the documented PATH invocation flow that previously broke all subsequent `source "$FLEET_ROOT/lib/..."` loads when the binary was reached through the init-created symlink
+
+---
+
 ## [3.0.4] · 2026-03-15
 
 ### Fixed
