@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `fleet runtime test <name>`: one off probe of any runtime or agent. Animated spinner runs while health, info, and version probes execute in parallel, then renders all three sections.
 - `fleet runtime list`: shows live status of every runtime, probed in parallel with an animated progress indicator on TTY output.
 - `fleet runtime rm <name>`: removes a runtime from the config, with explicit not found feedback.
-- `fleet policy`: shows the optional operator constitution and previews how rules are injected into dispatched task prompts.
+- `fleet policy`: shows, toggles, edits, clears, and previews the optional operator constitution.
 - Optional `constitution` config block: prepends customizable operator rules to `fleet task` and `fleet parallel` dispatches.
 - `runtimes` key in config: optional array of entries with at least `name` and `adapter`. Backward compatible: configs without the key behave exactly like v3.
 - User adapter directory: drop a custom `<type>.sh` file into `~/.fleet/adapters/` (or override via `FLEET_ADAPTERS_DIR`) and it is auto loaded with the same six function contract as the built ins.

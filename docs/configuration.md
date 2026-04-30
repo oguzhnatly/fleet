@@ -126,7 +126,7 @@ Example:
 }
 ```
 
-Use `fleet policy` to inspect the effective config and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
+Use `fleet policy` to inspect the effective config, `fleet policy add "<rule>"` to customize it from the CLI, and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
 
 ## Runtime Configuration (v4)
 

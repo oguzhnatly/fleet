@@ -85,6 +85,16 @@ cat > "$_TMP_POLICY_CFG" <<'CFGDATA'
 CFGDATA
 assert_ok "disabled policy leaves prompt unchanged" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG'; source '$FLEET_ROOT/lib/core/config.sh'; source '$FLEET_ROOT/lib/core/policy.sh'; out=\$(fleet_policy_apply 'fix tests' coder code); [ \"\$out\" = 'fix tests' ]"
+assert_ok "policy enable command updates config" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy enable >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"enabled\"] is True'"
+assert_ok "policy add command appends rule" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy add 'Require local tests' >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert \"Require local tests\" in d[\"constitution\"][\"rules\"]'"
+assert_ok "policy rm command removes rule" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy rm 1 >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert \"Should not appear\" not in d[\"constitution\"][\"rules\"]'"
+assert_ok "policy title command updates title" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy title 'Team Rules' >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"title\"] == \"Team Rules\"'"
+assert_ok "policy clear command empties rules" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy clear >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"rules\"] == []'"
 rm -f "$_TMP_POLICY_CFG"
 
 echo ""
