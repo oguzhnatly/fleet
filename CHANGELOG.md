@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] · 2026-04-30
+
+### Added
+- **Cross runtime adapter layer**: Fleet now works with any agent on any runtime, not just OpenClaw. Four built in adapters ship with the release.
+- `lib/core/adapters.sh`: registry, dispatcher, validator, and parallel probe helper. Each adapter implements a five function contract (`describe`, `verified`, `required`, `health`, `info`, `version`) and must complete within `FLEET_ADAPTER_TIMEOUT` seconds (default 6).
+- `lib/adapters/openclaw.sh`: verified probe of OpenClaw gateways via `/health` with authenticated `/v1/models` fallback when a token is configured. Preserves v3 OpenClaw behavior exactly.
+- `lib/adapters/http.sh`: generic HTTP probe with `expectedStatus`, custom `method`, optional bearer token, repeatable `headers`, and an optional `versionUrl`.
+- `lib/adapters/docker.sh`: queries the local docker daemon for container `State.Status` and `State.Health.Status`. Degrades gracefully when the docker CLI is missing.
+- `lib/adapters/process.sh`: detects the presence of an OS process via `pgrep`. Marked inferred because there is no protocol level handshake.
+- `fleet adapters`: lists registered adapters, marks each as verified or inferred, shows which adapter applies to every configured agent and runtime entry.
+- `fleet runtime add <name> <type> [options]`: registers a new entry under the `runtimes` key in config without manual JSON editing. Validates required fields per adapter, refuses names already used by an agent, writes the config atomically with `chmod 600`.
+- `fleet runtime test <name>`: one off probe of any runtime or agent. Animated spinner runs while health, info, and version probes execute in parallel, then renders all three sections.
+- `fleet runtime list`: shows live status of every runtime, probed in parallel with an animated progress indicator on TTY output.
+- `fleet runtime rm <name>`: removes a runtime from the config, with explicit not found feedback.
+- `runtimes` key in config: optional array of entries with at least `name` and `adapter`. Backward compatible: configs without the key behave exactly like v3.
+- User adapter directory: drop a custom `<type>.sh` file into `~/.fleet/adapters/` (or override via `FLEET_ADAPTERS_DIR`) and it is auto loaded with the same five function contract as the built ins.
+- `FLEET_ADAPTER_TIMEOUT` and `FLEET_ADAPTERS_DIR` environment variables documented in README and `_meta.json`.
+- `examples/cross-runtime/config.json`: full mixed runtime example covering openclaw, http, docker, and process adapters.
+
+### Changed
+- `bin/fleet`: routes `adapters` and `runtime|runtimes` subcommands, sources `lib/core/adapters.sh` alongside the other core libraries, exports `FLEET_ROOT`. Help text adds a CROSS RUNTIME section.
+- `fleet agents`: a new Runtimes section renders all v4 entries with adapter, endpoint, status, verified or inferred tag, and elapsed milliseconds. Probes run in parallel with an animated progress line on TTY output.
+- `fleet health`: a new Runtimes section probes every runtime entry through the adapter layer, in parallel.
+- `fleet sitrep`: tracks runtime state alongside agents and CI. Runtime status changes appear in the CHANGED section with `runtime <name>: <prev> → <new>` lines. Probing runs in a thread pool so a single slow runtime does not stall the sitrep.
+- `templates/configs/full.json`: includes a runtimes block with one example per adapter type. `templates/configs/minimal.json` reserves the `runtimes` key.
+- `_meta.json`: bumped version to 4.0.0, added `FLEET_ADAPTER_TIMEOUT` and `FLEET_ADAPTERS_DIR` to optional env vars, added the user adapter directory and runtimes config to permissions reads.
+
+### Backward Compatibility
+- Configs from v1 through v3 work without changes. Entries under `agents` continue to use the openclaw adapter by default. The runtime layer is purely additive.
+
+---
+
 ## [3.0.5] · 2026-04-30
 
 ### Fixed

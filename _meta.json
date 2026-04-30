@@ -1,8 +1,8 @@
 {
   "slug": "fleet",
-  "version": "3.0.5",
+  "version": "4.0.0",
   "type": "installable-cli",
-  "description": "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. All operations are local (loopback only). Operator consent is required before install.",
+  "description": "Multi-agent fleet management CLI with a cross runtime adapter layer. Probes OpenClaw, generic HTTP, Docker, and OS process targets through a single contract. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of runtimes. All operations are local (loopback only). Operator consent is required before install.",
   "requires": {
     "binaries": [
       "bash",
@@ -63,13 +63,22 @@
       {
         "name": "FLEET_NO_UPDATE_CHECK",
         "description": "Set to any value to disable the background GitHub release check and update banner"
+      },
+      {
+        "name": "FLEET_ADAPTER_TIMEOUT",
+        "description": "Maximum seconds any single adapter health probe may take before the dispatcher returns an error result (default: 6)"
+      },
+      {
+        "name": "FLEET_ADAPTERS_DIR",
+        "description": "Override the user adapter drop in directory (default: ~/.fleet/adapters). Custom <type>.sh files placed here are auto loaded alongside the built in adapters."
       }
     ]
   },
   "permissions": {
     "reads": [
-      "~/.fleet/config.json (agent gateway config created by fleet init)",
+      "~/.fleet/config.json (agent gateway and runtime config created by fleet init)",
       "~/.fleet/state/ (delta tracking state created by fleet itself)",
+      "~/.fleet/adapters/ (operator dropped custom adapter scripts loaded by the v4 adapter dispatcher)",
       "~/.openclaw*/agents/main/sessions/<fleet-session-id>.jsonl (active output stream of the operator's own fleet-named sessions only, for fleet watch command)",
       "~/.openclaw*/openclaw.json (gateway config, read-only, only during fleet init auto-detection)",
       "/proc/meminfo (memory usage, for fleet sitrep resource section, Linux only)"

@@ -31,7 +31,7 @@
 
 You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator that thinks, employees that code, review, deploy, and research. Fleet is the operational layer that was missing. One CLI that gives your coordinator full visibility, control, and judgment over the entire fleet.
 
-See what changed. Dispatch tasks. Learn which agents actually deliver, and route work to whoever you can trust. Works with any runtime.
+See what changed. Dispatch tasks. Learn which agents actually deliver, and route work to whoever you can trust. Works with any runtime — OpenClaw, HTTP, Docker, or bare OS processes — through a unified adapter interface.
 
 <p align="center">
   <em>Built for AI agents to manage AI agents. Works on any system 🦞</em>
@@ -110,10 +110,20 @@ fleet sitrep
 
 | Command | Description |
 |---------|-------------|
-| `fleet health` | Health check all gateways and endpoints |
-| `fleet agents` | Show agent fleet with live status and latency |
-| `fleet sitrep [hours]` | Full SITREP with delta tracking |
+| `fleet health` | Health check all gateways, endpoints, and v4 runtimes |
+| `fleet agents` | Show agent fleet with live status and latency, plus v4 runtimes |
+| `fleet sitrep [hours]` | Full SITREP with delta tracking across agents, CI, runtimes |
 | `fleet audit` | Check for misconfigurations and risks |
+
+### Cross-Runtime (v4)
+
+| Command | Description |
+|---------|-------------|
+| `fleet adapters` | List registered adapters and their bindings to agents and runtimes |
+| `fleet runtime add <name> <type>` | Register a new runtime (openclaw, http, docker, process) |
+| `fleet runtime test <name>` | One-off probe of a runtime or agent (health + info + version) |
+| `fleet runtime list` | Live status of every runtime, probed in parallel |
+| `fleet runtime rm <name>` | Remove a runtime from the config |
 
 ### Development
 
@@ -326,7 +336,7 @@ Services
 
 ## Patterns
 
-Fleet supports any agent organization pattern. Three common ones:
+Fleet supports any agent organization pattern. Four common ones:
 
 ### Solo Empire
 > One brain, many hands. The indie hacker setup.
@@ -361,6 +371,19 @@ Fleet supports any agent organization pattern. Three common ones:
    (Codex)  (Sonnet) (Sonnet)  (Codex)
 ```
 
+### Cross-Runtime Operation (v4)
+> Mix OpenClaw agents with Docker containers, HTTP services, and OS processes in one config.
+
+```
+            Coordinator (Opus)
+           /      |      \
+       Coder   Reviewer  Deployer          ← OpenClaw adapters
+                   |
+          billing-api (HTTP)               ← HTTP adapter
+          postgres    (Docker)             ← Docker adapter
+          tailscaled  (Process)            ← Process adapter
+```
+
 See [`docs/patterns.md`](docs/patterns.md) for detailed guides and [`examples/`](examples/) for configs.
 
 ## Configuration
@@ -391,6 +414,32 @@ Fleet reads `~/.fleet/config.json`. Create one with `fleet init` or manually:
 
 Everything is configurable. No hardcoded ports, models, or names. Your fleet, your way.
 
+### v4: Cross-Runtime Adapters
+
+Register any target under the `runtimes` key. Each entry needs an `adapter` field:
+
+```json
+{
+  "runtimes": [
+    { "name": "billing-api", "adapter": "http",     "url": "https://billing.example.com/health" },
+    { "name": "postgres",    "adapter": "docker",   "container": "postgres" },
+    { "name": "tailscaled",  "adapter": "process",  "process": "tailscaled" },
+    { "name": "secondary",   "adapter": "openclaw", "port": 48490 }
+  ]
+}
+```
+
+Add a runtime from the CLI without editing JSON:
+
+```bash
+fleet runtime add billing-api http --url=https://billing.example.com/health
+fleet runtime add postgres docker --container=postgres
+fleet runtime add tailscale process --process=tailscaled
+fleet runtime test billing-api   # one-off probe
+fleet runtime list                # live status of all runtimes
+fleet adapters                    # list registered adapters and bindings
+```
+
 See [`docs/configuration.md`](docs/configuration.md) for the full schema.
 
 ## Environment Variables
@@ -398,40 +447,57 @@ See [`docs/configuration.md`](docs/configuration.md) for the full schema.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `FLEET_CONFIG` | Config file path | `~/.fleet/config.json` |
+| `FLEET_LOG` | Dispatch log path | `~/.fleet/log.jsonl` |
 | `FLEET_WORKSPACE` | Workspace override | Config value |
 | `FLEET_STATE_DIR` | State persistence | `~/.fleet/state` |
-| `NO_COLOR` | Disable colors | _(unset)_ |
+| `FLEET_ADAPTER_TIMEOUT` | Max seconds per adapter probe | `6` |
+| `FLEET_ADAPTERS_DIR` | Drop-in directory for custom adapters | `~/.fleet/adapters` |
+| `NO_COLOR` | Disable ANSI color output | _(unset)_ |
+| `FLEET_NO_UPDATE_CHECK` | Skip background GitHub release check | _(unset)_ |
 
 ## Architecture
 
 ```
 fleet/
-├── bin/fleet              # Entry point
+├── bin/fleet               # Entry point
 ├── lib/
-│   ├── core/              # Config, output, state management
-│   │   ├── config.sh      # JSON config loader
-│   │   ├── output.sh      # Colors, formatting, HTTP helpers
-│   │   └── state.sh       # Delta state persistence
+│   ├── core/               # Config, output, state, trust, adapter dispatcher
+│   │   ├── adapters.sh     # v4 adapter registry, dispatcher, parallel probe helper
+│   │   ├── config.sh       # JSON config loader
+│   │   ├── output.sh       # Colors, formatting, HTTP helpers
+│   │   ├── state.sh        # Delta state persistence
+│   │   └── trust.sh        # v3 trust scoring engine
+│   ├── adapters/           # v4 cross-runtime adapters (one file per runtime type)
+│   │   ├── openclaw.sh     # OpenClaw gateway probe (verified)
+│   │   ├── http.sh         # Generic HTTP probe (verified)
+│   │   ├── docker.sh       # Docker container state and health (verified when CLI present)
+│   │   └── process.sh      # OS process via pgrep (inferred)
 │   └── commands/           # One file per command
+│       ├── adapters.sh     # v4: list adapters and bindings
 │       ├── agents.sh       # Agent fleet status
 │       ├── audit.sh        # Misconfiguration checker
 │       ├── backup.sh       # Config backup/restore
 │       ├── ci.sh           # GitHub CI integration
-│       ├── health.sh       # Endpoint health checks
+│       ├── health.sh       # Endpoint and runtime health checks
 │       ├── init.sh         # Interactive setup
 │       ├── kill.sh         # Graceful agent stop
 │       ├── log.sh          # Append-only dispatch log
 │       ├── parallel.sh     # Parallel task decomposition
+│       ├── runtime.sh      # v4: runtime add, test, list, rm
+│       ├── score.sh        # v3 score command
 │       ├── sitrep.sh       # Structured status reports
 │       ├── skills.sh       # ClawHub skill listing
 │       ├── steer.sh        # Mid-session corrections
 │       ├── task.sh         # Task dispatch to agents
+│       ├── trust.sh        # v3 trust command
+│       ├── update.sh       # Self-upgrade
 │       └── watch.sh        # Live session tail
 ├── templates/configs/      # Config templates
 ├── examples/               # Architecture pattern examples
 │   ├── solo-empire/
 │   ├── dev-team/
-│   └── research-lab/
+│   ├── research-lab/
+│   └── cross-runtime/      # v4: mixed openclaw, http, docker, process targets
 ├── docs/                   # Documentation
 ├── tests/                  # Integration tests
 ├── SKILL.md                # ClawHub agent instructions
@@ -489,15 +555,18 @@ Fleet learns which agents actually deliver, not just which ones are alive.
 - [x] Trust summary line appended to every `fleet sitrep` output
 - [x] v3.5: cross-validation: `fleet score` checks code/deploy successes against GitHub CI activity within 1h, flags unverified tasks
 
-### v4: Planned (cross-runtime adapter layer)
+### v4: Shipped ✅ (cross-runtime adapter layer)
 Fleet works with any agent on any runtime, not just OpenClaw.
 
-- [ ] Pluggable adapter interface: three-function contract (health, info, version) every runtime implements
-- [ ] Built-in adapters: OpenClaw (verified), HTTP (any /health endpoint), Docker (container status), Process (inferred, labeled as such)
-- [ ] `fleet adapters`: list registered adapters, status, and whether health is verified or inferred
-- [ ] `fleet runtime add <name> <type>`: register a new runtime without editing config manually
-- [ ] `fleet runtime test <name>`: one-off health check against a named adapter for debugging
-- [ ] Backward compatible: existing configs default to OpenClaw adapter, zero migration needed
+- [x] Pluggable adapter interface: five-function contract (`describe`, `verified`, `required`, `health`, `info`, `version`) every runtime implements
+- [x] Built-in adapters: OpenClaw (verified), HTTP (any /health endpoint, verified), Docker (container state and health, verified when CLI present), Process (pgrep-based, inferred and labeled as such)
+- [x] `fleet adapters`: lists registered adapters with verified vs inferred status, plus the binding from each agent and runtime entry to its adapter
+- [x] `fleet runtime add <name> <type>`: registers a new runtime without editing config manually
+- [x] `fleet runtime test <name>`: one-off health, info, and version probe against a named adapter for debugging, with animated spinner
+- [x] `fleet runtime list` / `fleet runtime rm`: parallel probe of every runtime, and removal by name
+- [x] User adapter directory: drop a custom `<type>.sh` into `~/.fleet/adapters/` (or `FLEET_ADAPTERS_DIR`) and it is auto-loaded
+- [x] `fleet agents`, `fleet health`, `fleet sitrep` now surface runtimes alongside agents, with delta tracking on runtime status changes
+- [x] Backward compatible: existing configs default to OpenClaw adapter, zero migration needed
 
 ### v5: Planned (server mode and HTTP API)
 Fleet becomes an embeddable data source, not just a CLI.

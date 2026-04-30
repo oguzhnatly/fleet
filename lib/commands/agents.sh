@@ -97,4 +97,19 @@ for agent in agents:
 
     print(f"  {icon} {aname:16} {arole:16} {amodel:30} :{aport:<6} {status} {D}{ms}ms{N}")
 AGENTS_PY
+
+    # ── v4: cross runtime entries (adapter layer) ───────────────────────────
+    fleet_adapter_load_all
+    local _runtime_entries=()
+    local _line _kind
+    while IFS= read -r _line; do
+        _kind="${_line%%$'\t'*}"
+        [ "$_kind" = "runtime" ] || continue
+        _runtime_entries+=("${_line#*$'\t'}")
+    done < <(fleet_adapter_iter_entries)
+
+    if [ "${#_runtime_entries[@]}" -gt 0 ]; then
+        out_section "Runtimes (v4)"
+        fleet_adapter_probe_parallel "${_runtime_entries[@]}"
+    fi
 }

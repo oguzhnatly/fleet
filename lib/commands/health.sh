@@ -62,6 +62,26 @@ PY
         fi
     fi
 
+    # ── v4: runtimes via adapter layer ──────────────────────────────────────
+    if fleet_has_config; then
+        local rt_count
+        rt_count=$(_json_array_len "$FLEET_CONFIG_PATH" "runtimes")
+        if [ "$rt_count" -gt 0 ]; then
+            out_section "Runtimes"
+            fleet_adapter_load_all
+            local _h_entries=()
+            local hline hkind
+            while IFS= read -r hline; do
+                hkind="${hline%%$'\t'*}"
+                [ "$hkind" = "runtime" ] || continue
+                _h_entries+=("${hline#*$'\t'}")
+            done < <(fleet_adapter_iter_entries)
+            if [ "${#_h_entries[@]}" -gt 0 ]; then
+                fleet_adapter_probe_parallel "${_h_entries[@]}"
+            fi
+        fi
+    fi
+
     # Systemd services (if any configured)
     if fleet_has_config; then
         local svc_count

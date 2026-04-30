@@ -48,6 +48,11 @@
     { "name": "api", "url": "https://api.example.com/health", "expectedStatus": 200 },
     { "name": "docs", "url": "https://docs.example.com", "expectedStatus": 200, "timeout": 10 }
   ],
+  "runtimes": [
+    { "name": "billing-api", "adapter": "http", "url": "https://billing.example.com/health", "expectedStatus": 200 },
+    { "name": "postgres", "adapter": "docker", "container": "postgres" },
+    { "name": "tailscaled", "adapter": "process", "process": "tailscaled" }
+  ],
   "repos": [
     { "name": "frontend", "repo": "myorg/frontend" },
     { "name": "backend", "repo": "myorg/backend" },

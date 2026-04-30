@@ -175,6 +175,10 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | User asks "what changed?" | `fleet sitrep`, report deltas |
 | Scheduled morning report | `fleet sitrep 12` in cron |
 | Before deploying | `fleet health` + `fleet ci` |
+| Register a non-OpenClaw target | `fleet runtime add <name> <type> [options]` (v4) |
+| Probe one runtime end to end | `fleet runtime test <name>` (v4) |
+| Live status of every runtime | `fleet runtime list` (v4) |
+| List adapters and their bindings | `fleet adapters` (v4) |
 
 ## Auto-Setup
 
@@ -695,6 +699,65 @@ fleet v3.1.0 is available. Run  fleet update  to upgrade from v3.0.0.
 The GitHub check runs as a detached background process once per 24 hours so there
 is zero latency impact on normal fleet commands. The result is cached at
 `~/.fleet/state/update_check.json`.
+
+### `fleet adapters`
+
+Lists every adapter the fleet knows about, marked **verified** when the adapter
+performs a real protocol-level handshake or **inferred** when it only detects
+presence. Also shows the binding from each agent and runtime entry to its
+adapter, so you can see at a glance which runtime probe runs against each
+target.
+
+### `fleet runtime add <name> <type> [options]`
+
+Registers a new entry under the `runtimes` key in `~/.fleet/config.json`
+without manual JSON editing.
+
+**Adapter types and required options:**
+
+| Type | Required | Common options |
+|------|----------|----------------|
+| `openclaw` | `--port=<n>` | `--host`, `--token`, `--role`, `--model` |
+| `http`     | `--url=<URL>` | `--expected-status`, `--method`, `--token`, `--header K=V`, `--version-url` |
+| `docker`   | `--container=<name>` | `--role`, `--model` |
+| `process`  | `--process=<pat>` | `--match-full`, `--role` |
+
+Examples:
+
+```bash
+fleet runtime add billing-api http --url=https://billing.example.com/health
+fleet runtime add postgres docker --container=postgres
+fleet runtime add tailscale process --process=tailscaled
+fleet runtime add overflow openclaw --port=48490 --token=$OVERFLOW_TOKEN
+```
+
+The command refuses a name already used by an agent and writes the config
+atomically with `chmod 600`.
+
+### `fleet runtime test <name>`
+
+One-off probe of a runtime or agent. Animates a spinner while the health,
+info, and version probes run in parallel, then renders all three sections.
+Use when a runtime turns red in `sitrep` and you need a focused look.
+
+### `fleet runtime list`
+
+Live status of every registered runtime, probed in parallel with an animated
+progress indicator on TTY output.
+
+### `fleet runtime rm <name>`
+
+Removes a runtime from the config. Returns a clear error if the name is
+not found.
+
+### Custom Adapters
+
+Drop a `<type>.sh` file into `~/.fleet/adapters/` (or `FLEET_ADAPTERS_DIR`)
+with these five functions: `adapter_<type>_describe`, `adapter_<type>_verified`
+(echo `verified` or `inferred`), `adapter_<type>_required`, `adapter_<type>_health`,
+`adapter_<type>_info`, `adapter_<type>_version`. Each must complete within
+`FLEET_ADAPTER_TIMEOUT` seconds (default 6) and emit JSON on stdout. The
+runtime registry validates required fields per adapter before saving.
 
 ## Fleet Patterns
 
