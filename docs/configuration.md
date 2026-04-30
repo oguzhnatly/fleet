@@ -23,6 +23,13 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
       "token": "string: auth token for HTTP API"
     }
   ],
+  "constitution": {
+    "enabled": "boolean: prepend operator rules to dispatched tasks",
+    "title": "string: display title for the rule block",
+    "mode": "string: prepend or append",
+    "agents": "array: optional list of agent names to apply to",
+    "rules": "array: ordered rule strings"
+  },
   "runtimes": [
     {
       "name": "string: unique runtime name",
@@ -91,6 +98,35 @@ See the `examples/` directory for recommended configurations:
 - **solo-empire**: One coordinator + 2 employees
 - **dev-team**: Team leads with specialized developers
 - **research-lab**: Research director with analysts and writers
+
+## Operator Constitution
+
+The optional `constitution` block prepends rules to prompts sent by `fleet task` and `fleet parallel`.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `false` | Turn prompt policy injection on or off |
+| `title` | string | `Operator Constitution` | Header for the injected block |
+| `mode` | string | `prepend` | Use `prepend` or `append` |
+| `agents` | array | all agents | Optional allow list of agent names |
+| `rules` | array | empty | Ordered rule strings sent with each task |
+
+Example:
+
+```json
+{
+  "constitution": {
+    "enabled": true,
+    "rules": [
+      "Read project instructions before editing files",
+      "Run verification before reporting completion",
+      "Do not rewrite shared git history unless the operator explicitly declares an emergency"
+    ]
+  }
+}
+```
+
+Use `fleet policy` to inspect the effective config and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
 
 ## Runtime Configuration (v4)
 

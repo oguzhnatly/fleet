@@ -80,6 +80,10 @@ cmd_task() {
         task_type="$(_infer_task_type "$prompt")"
     fi
 
+    # ── Apply optional operator constitution ────────────────────────────────
+    local dispatch_prompt
+    dispatch_prompt="$(fleet_policy_apply "$prompt" "$agent" "$task_type")"
+
     # ── Log dispatch ────────────────────────────────────────────────────────
     local task_id
     task_id="$(fleet_log_dispatch "$agent" "$task_type" "$prompt")"
@@ -95,7 +99,7 @@ cmd_task() {
 
     if [ "$no_wait" = "true" ]; then
         # Fire and forget: dispatch without waiting for response
-        python3 -u - "$port" "$token" "$prompt" "$agent" <<'PY'
+        python3 -u - "$port" "$token" "$dispatch_prompt" "$agent" <<'PY'
 import subprocess, sys, json
 
 port, token, prompt, agent = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
@@ -125,7 +129,7 @@ PY
     local outcome="success"
     echo -e "  ${CLR_DIM}────────────────────────────────────────${CLR_RESET}"
 
-    python3 -u - "$port" "$token" "$prompt" "$agent" "$timeout_min" <<'PY'
+    python3 -u - "$port" "$token" "$dispatch_prompt" "$agent" "$timeout_min" <<'PY'
 import subprocess, sys, json, signal, time
 
 port       = sys.argv[1]

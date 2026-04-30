@@ -273,6 +273,9 @@ with open(config_path) as f:
     config = json.load(f)
 
 agent_map = {a["name"]: a for a in config.get("agents", [])}
+policy = config.get("constitution") or config.get("policy") or {}
+if not isinstance(policy, dict):
+    policy = {}
 
 G = "\033[32m"; R = "\033[31m"; Y = "\033[33m"; D = "\033[2m"; C = "\033[36m"; N = "\033[0m"; BOLD = "\033[1m"
 
@@ -281,6 +284,35 @@ lock = threading.Lock()
 
 def now_ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def apply_policy(prompt, agent, task_type):
+    if not policy.get("enabled", False):
+        return prompt
+    only_agents = policy.get("agents") or []
+    if only_agents and agent not in only_agents:
+        return prompt
+    rules = policy.get("rules") or []
+    if isinstance(rules, str):
+        rules = [rules]
+    rules = [str(r).strip() for r in rules if str(r).strip()]
+    prefix = str(policy.get("prefix") or policy.get("prompt") or "Follow the operator constitution before doing this task.").strip()
+    title = str(policy.get("title") or "Operator Constitution").strip()
+    mode = str(policy.get("mode") or "prepend").strip().lower()
+    if not rules and not prefix:
+        return prompt
+    lines = [title]
+    if prefix:
+        lines.append(prefix)
+    lines.append(f"Agent: {agent}")
+    lines.append(f"Task type: {task_type}")
+    if rules:
+        lines.append("Rules:")
+        for i, rule in enumerate(rules, 1):
+            lines.append(f"{i}. {rule}")
+    block = "\n".join(lines).strip()
+    if mode == "append":
+        return f"{prompt}\n\n{block}"
+    return f"{block}\n\nTask:\n{prompt}"
 
 def log_entry(task_id, agent, task_type, prompt, dispatched_at):
     entry = {
@@ -310,9 +342,11 @@ def run_subtask(st):
     dispatched_at = now_ts()
     log_entry(task_id, agent_name, task_type, prompt, dispatched_at)
 
+    dispatch_prompt = apply_policy(prompt, agent_name, task_type)
+
     payload = json.dumps({
         "model": "openclaw",
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": dispatch_prompt}],
     })
 
     with lock:

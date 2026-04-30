@@ -30,6 +30,7 @@ source "$FLEET_ROOT/lib/core/output.sh"
 source "$FLEET_ROOT/lib/core/state.sh"
 source "$FLEET_ROOT/lib/core/trust.sh"
 source "$FLEET_ROOT/lib/core/adapters.sh"
+source "$FLEET_ROOT/lib/core/policy.sh"
 export FLEET_ROOT
 
 # ── Load commands ───────────────────────────────────────────────────────────
@@ -114,6 +115,7 @@ cmd_help() {
     fleet parallel "<task>"           Decompose and dispatch in parallel (trust-weighted)
     fleet kill <agent>                Send graceful stop signal
     fleet log [--agent X] [--limit N] View dispatch history
+    fleet policy                     Show operator constitution rules
 
   MONITORING
     fleet health              Health check all gateways and endpoints
@@ -178,6 +180,7 @@ case "${1:-help}" in
     score)               cmd_score "${@:2}" ;;
     adapters)            cmd_adapters ;;
     runtime|runtimes)    cmd_runtime "${@:2}" ;;
+    policy|constitution) cmd_policy "${@:2}" ;;
     update)              cmd_update "${@:2}" ;;
     help|--help|-h)      cmd_help ;;
     *)

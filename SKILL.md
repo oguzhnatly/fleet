@@ -179,6 +179,38 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | Probe one runtime end to end | `fleet runtime test <name>` (v4) |
 | Live status of every runtime | `fleet runtime list` (v4) |
 | List adapters and their bindings | `fleet adapters` (v4) |
+| Show configured task rules | `fleet policy` |
+| Preview rules applied to a task | `fleet policy preview <agent> "<prompt>"` |
+
+## Operator Constitution
+
+If `constitution.enabled` is true in the Fleet config, `fleet task` and `fleet parallel` prepend the configured rules to every dispatched task. Use this for operator rules that all agents should see before they act.
+
+Example config:
+
+```json
+{
+  "constitution": {
+    "enabled": true,
+    "title": "Operator Constitution",
+    "mode": "prepend",
+    "rules": [
+      "Read project instructions before editing files",
+      "Run verification before reporting completion",
+      "Do not rewrite shared git history unless the operator explicitly declares an emergency"
+    ]
+  }
+}
+```
+
+Useful commands:
+
+```bash
+fleet policy
+fleet policy preview coder "fix failing tests" --type code
+```
+
+Treat this as prompt level enforcement. It helps compliant coding agents follow the operator's rules, but it does not replace sandboxing, git hooks, CI, or human review.
 
 ## Auto-Setup
 
