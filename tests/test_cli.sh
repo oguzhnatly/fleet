@@ -152,6 +152,46 @@ PYCHECK
     return $rc
 }
 
+assert_required_policy_blocks_task() {
+    local cfg port
+    _start_policy_capture_server || return 1
+    port=$(cat "$_POLICY_PORT_FILE")
+    cfg="$_POLICY_SERVER_DIR/config.json"
+    cat > "$cfg" <<CFGDATA
+{"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"required":true,"applyTo":["task"],"rules":[]}}
+CFGDATA
+    if FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" task coder "fix tests" --type code --no-wait >/dev/null 2>&1; then
+        _cleanup_policy_capture_server
+        return 1
+    fi
+    if [ -e "$_POLICY_CAPTURE_FILE" ]; then
+        _cleanup_policy_capture_server
+        return 1
+    fi
+    _cleanup_policy_capture_server
+    return 0
+}
+
+assert_required_policy_blocks_steer() {
+    local cfg port
+    _start_policy_capture_server || return 1
+    port=$(cat "$_POLICY_PORT_FILE")
+    cfg="$_POLICY_SERVER_DIR/config.json"
+    cat > "$cfg" <<CFGDATA
+{"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"required":true,"applyTo":["steer"],"rules":[]}}
+CFGDATA
+    if FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" steer coder "tighten review" >/dev/null 2>&1; then
+        _cleanup_policy_capture_server
+        return 1
+    fi
+    if [ -e "$_POLICY_CAPTURE_FILE" ]; then
+        _cleanup_policy_capture_server
+        return 1
+    fi
+    _cleanup_policy_capture_server
+    return 0
+}
+
 echo ""
 echo "Fleet CLI Tests"
 echo "═══════════════"
@@ -211,11 +251,17 @@ assert_ok "policy title command updates title" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy title 'Team Rules' >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"title\"] == \"Team Rules\"'"
 assert_ok "policy scope command updates apply list" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy scope task,parallel,steer >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"applyTo\"] == [\"task\", \"parallel\", \"steer\"]'"
+assert_ok "policy require command enables required mode" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy require >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"required\"] is True; assert d[\"constitution\"][\"enabled\"] is True'"
+assert_ok "policy optional command disables required mode" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy optional >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"required\"] is False'"
 assert_ok "policy clear command empties rules" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy clear >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"rules\"] == []'"
 assert_ok "task dispatch sends policy injected prompt" assert_task_policy_dispatch
 assert_ok "parallel dispatch sends policy injected prompt" assert_parallel_policy_dispatch
 assert_ok "steer dispatch sends policy injected prompt" assert_steer_policy_dispatch
+assert_ok "required policy blocks task without rules" assert_required_policy_blocks_task
+assert_ok "required policy blocks steer without rules" assert_required_policy_blocks_steer
 rm -f "$_TMP_POLICY_CFG"
 
 echo ""

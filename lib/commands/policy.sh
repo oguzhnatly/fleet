@@ -9,6 +9,8 @@ _policy_help() {
     fleet policy show
     fleet policy enable
     fleet policy disable
+    fleet policy require
+    fleet policy optional
     fleet policy add "<rule>"
     fleet policy rm <index>
     fleet policy clear
@@ -43,6 +45,7 @@ policy = cfg.setdefault("constitution", {})
 policy.setdefault("enabled", False)
 policy.setdefault("title", "Operator Constitution")
 policy.setdefault("mode", "prepend")
+policy.setdefault("required", False)
 policy.setdefault("applyTo", ["task", "parallel", "steer"])
 policy.setdefault("rules", [])
 if isinstance(policy.get("rules"), str):
@@ -54,6 +57,13 @@ if action == "enable":
 elif action == "disable":
     policy["enabled"] = False
     message = "disabled"
+elif action == "require":
+    policy["required"] = True
+    policy["enabled"] = True
+    message = "required"
+elif action == "optional":
+    policy["required"] = False
+    message = "optional"
 elif action == "add":
     rule = value.strip()
     if not rule:
@@ -119,6 +129,7 @@ except Exception:
 print(f"  enabled    {str(data.get('enabled', False)).lower()}")
 print(f"  title      {data.get('title', 'Operator Constitution')}")
 print(f"  mode       {data.get('mode', 'prepend')}")
+print(f"  required   {str(data.get('required', False)).lower()}")
 agents = data.get('agents') or []
 print(f"  agents     {', '.join(agents) if agents else 'all'}")
 apply_to = data.get('applyTo') or ['task', 'parallel', 'steer']
@@ -166,6 +177,14 @@ cmd_policy() {
         disable)
             result="$(_policy_update disable)" || return 1
             [ "$result" = "disabled" ] && out_ok "Operator constitution disabled"
+            ;;
+        require)
+            result="$(_policy_update require)" || return 1
+            [ "$result" = "required" ] && out_ok "Operator constitution required"
+            ;;
+        optional)
+            result="$(_policy_update optional)" || return 1
+            [ "$result" = "optional" ] && out_ok "Operator constitution optional"
             ;;
         add)
             if [[ $# -lt 2 ]]; then echo "  Usage: fleet policy add \"<rule>\""; return 1; fi

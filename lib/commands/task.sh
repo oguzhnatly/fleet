@@ -81,7 +81,13 @@ cmd_task() {
     fi
 
     # ── Apply optional operator constitution ────────────────────────────────
-    local dispatch_prompt
+    local policy_guard dispatch_prompt
+    policy_guard="$(fleet_policy_guard "$agent" "$task_type" "task")"
+    if [ "$policy_guard" != "ok" ]; then
+        out_fail "$policy_guard"
+        echo "       Run: fleet policy"
+        return 1
+    fi
     dispatch_prompt="$(fleet_policy_apply "$prompt" "$agent" "$task_type" "task")"
 
     # ── Log dispatch ────────────────────────────────────────────────────────

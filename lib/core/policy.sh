@@ -66,6 +66,52 @@ else:
 POLICY_PY
 }
 
+fleet_policy_guard() {
+    local agent="${1:-}" task_type="${2:-}" action="${3:-task}"
+    python3 - "$FLEET_CONFIG_PATH" "$agent" "$task_type" "$action" <<'POLICY_PY'
+import json, sys
+
+config_path, agent, task_type, action = sys.argv[1:5]
+try:
+    with open(config_path) as f:
+        config = json.load(f)
+except Exception:
+    print("ok")
+    sys.exit(0)
+policy = config.get("constitution") or config.get("policy") or {}
+if not isinstance(policy, dict):
+    print("ok")
+    sys.exit(0)
+required = bool(policy.get("required", False) or policy.get("strict", False))
+if not required:
+    print("ok")
+    sys.exit(0)
+apply_to = policy.get("applyTo") or policy.get("apply_to") or policy.get("commands") or ["task", "parallel", "steer"]
+if isinstance(apply_to, str):
+    apply_to = [part.strip() for part in apply_to.split(",")]
+apply_to = [str(part).strip().lower() for part in apply_to if str(part).strip()]
+if apply_to and action.lower() not in apply_to and "all" not in apply_to:
+    print("ok")
+    sys.exit(0)
+only_agents = policy.get("agents") or []
+if only_agents and agent not in only_agents:
+    print(f"constitution required but agent '{agent}' is outside constitution scope")
+    sys.exit(1)
+rules = policy.get("rules") or []
+if isinstance(rules, str):
+    rules = [rules]
+rules = [str(r).strip() for r in rules if str(r).strip()]
+prefix = str(policy.get("prefix") or policy.get("prompt") or "").strip()
+if not policy.get("enabled", False):
+    print("constitution required but disabled")
+    sys.exit(1)
+if not rules and not prefix:
+    print("constitution required but has no rules")
+    sys.exit(1)
+print("ok")
+POLICY_PY
+}
+
 fleet_policy_summary_json() {
     python3 - "$FLEET_CONFIG_PATH" <<'POLICY_PY'
 import json, sys
@@ -85,6 +131,7 @@ print(json.dumps({
     "enabled": bool(policy.get("enabled", False)),
     "title": policy.get("title") or "Operator Constitution",
     "mode": policy.get("mode") or "prepend",
+    "required": bool(policy.get("required", False) or policy.get("strict", False)),
     "agents": policy.get("agents") or [],
     "applyTo": policy.get("applyTo") or policy.get("apply_to") or policy.get("commands") or ["task", "parallel", "steer"],
     "rules": [str(r) for r in rules if str(r).strip()],

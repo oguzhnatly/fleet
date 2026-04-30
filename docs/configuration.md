@@ -27,6 +27,7 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
     "enabled": "boolean: prepend operator rules to dispatched tasks",
     "title": "string: display title for the rule block",
     "mode": "string: prepend or append",
+    "required": "boolean: block scoped dispatches when the constitution is disabled or empty",
     "agents": "array: optional list of agent names to apply to",
     "applyTo": "array: task, parallel, steer, or all",
     "rules": "array: ordered rule strings"
@@ -109,6 +110,7 @@ The optional `constitution` block prepends rules to prompts sent by `fleet task`
 | `enabled` | boolean | `false` | Turn prompt policy injection on or off |
 | `title` | string | `Operator Constitution` | Header for the injected block |
 | `mode` | string | `prepend` | Use `prepend` or `append` |
+| `required` | boolean | `false` | Block scoped dispatches when the constitution is disabled or empty |
 | `agents` | array | all agents | Optional allow list of agent names |
 | `applyTo` | array | `task`, `parallel`, `steer` | Commands that receive the rule block |
 | `rules` | array | empty | Ordered rule strings sent with each task |
@@ -119,6 +121,7 @@ Example:
 {
   "constitution": {
     "enabled": true,
+    "required": true,
     "applyTo": ["task", "parallel", "steer"],
     "rules": [
       "Read project instructions before editing files",
@@ -129,7 +132,7 @@ Example:
 }
 ```
 
-Use `fleet policy` to inspect the effective config, `fleet policy add "<rule>"` to customize it from the CLI, `fleet policy scope task,parallel,steer` to choose where it applies, and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
+Use `fleet policy` to inspect the effective config, `fleet policy add "<rule>"` to customize it from the CLI, `fleet policy require` to block scoped dispatches without valid rules, `fleet policy scope task,parallel,steer` to choose where it applies, and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
 
 ## Runtime Configuration (v4)
 
