@@ -112,7 +112,7 @@ assert_parallel_policy_dispatch() {
     port=$(cat "$_POLICY_PORT_FILE")
     cfg="$_POLICY_SERVER_DIR/config.json"
     cat > "$cfg" <<CFGDATA
-{"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"title":"Team Constitution","rules":["Never rewrite shared history","Run verification before completion"]}}
+{"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"title":"Team Constitution","applyTo":["task","parallel","steer"],"rules":["Never rewrite shared history","Run verification before completion"]}}
 CFGDATA
     printf 'y\n' | FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" parallel "implement login" --timeout 1 >/dev/null
     _wait_policy_capture || { _cleanup_policy_capture_server; return 1; }
@@ -123,6 +123,29 @@ content = body["messages"][0]["content"]
 assert "Team Constitution" in content
 assert "Never rewrite shared history" in content
 assert "Task:\nImplementation: implement login" in content
+PYCHECK
+    local rc=$?
+    _cleanup_policy_capture_server
+    return $rc
+}
+
+assert_steer_policy_dispatch() {
+    local cfg port
+    _start_policy_capture_server || return 1
+    port=$(cat "$_POLICY_PORT_FILE")
+    cfg="$_POLICY_SERVER_DIR/config.json"
+    cat > "$cfg" <<CFGDATA
+{"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"title":"Team Constitution","applyTo":["task","parallel","steer"],"rules":["Never rewrite shared history","Run verification before completion"]}}
+CFGDATA
+    FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" steer coder "tighten review" >/dev/null
+    _wait_policy_capture || { _cleanup_policy_capture_server; return 1; }
+    python3 - "$_POLICY_CAPTURE_FILE" <<'PYCHECK'
+import json, sys
+body = json.load(open(sys.argv[1]))
+content = body["messages"][0]["content"]
+assert "Team Constitution" in content
+assert "Never rewrite shared history" in content
+assert "Task:\ntighten review" in content
 PYCHECK
     local rc=$?
     _cleanup_policy_capture_server
@@ -186,10 +209,13 @@ assert_ok "policy rm command removes rule" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy rm 1 >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert \"Should not appear\" not in d[\"constitution\"][\"rules\"]'"
 assert_ok "policy title command updates title" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy title 'Team Rules' >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"title\"] == \"Team Rules\"'"
+assert_ok "policy scope command updates apply list" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy scope task,parallel,steer >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"applyTo\"] == [\"task\", \"parallel\", \"steer\"]'"
 assert_ok "policy clear command empties rules" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy clear >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"rules\"] == []'"
 assert_ok "task dispatch sends policy injected prompt" assert_task_policy_dispatch
 assert_ok "parallel dispatch sends policy injected prompt" assert_parallel_policy_dispatch
+assert_ok "steer dispatch sends policy injected prompt" assert_steer_policy_dispatch
 rm -f "$_TMP_POLICY_CFG"
 
 echo ""

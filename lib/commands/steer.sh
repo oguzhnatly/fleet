@@ -21,6 +21,9 @@ cmd_steer() {
         return 1
     fi
 
+    local dispatch_message
+    dispatch_message="$(fleet_policy_apply "$message" "$agent" "steer" "steer")"
+
     out_header "Fleet Steer"
     out_kv "Agent"   "$agent"
     out_kv "Session" "fleet-$agent"
@@ -32,7 +35,7 @@ cmd_steer() {
     fleet_log_steer "$agent"
 
     # Send to the same session used by fleet task
-    python3 -u - "$port" "$token" "$message" "$agent" <<'PY'
+    python3 -u - "$port" "$token" "$dispatch_message" "$agent" <<'PY'
 import subprocess, sys, json
 
 port, token, message, agent = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]

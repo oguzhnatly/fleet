@@ -13,7 +13,8 @@ _policy_help() {
     fleet policy rm <index>
     fleet policy clear
     fleet policy title "<title>"
-    fleet policy preview <agent> "<prompt>" [--type code|review|research|deploy|qa]
+    fleet policy scope task,parallel,steer
+    fleet policy preview <agent> "<prompt>" [--type code|review|research|deploy|qa] [--action task|parallel|steer]
 
   Config key:
     constitution.enabled = true
@@ -42,6 +43,7 @@ policy = cfg.setdefault("constitution", {})
 policy.setdefault("enabled", False)
 policy.setdefault("title", "Operator Constitution")
 policy.setdefault("mode", "prepend")
+policy.setdefault("applyTo", ["task", "parallel", "steer"])
 policy.setdefault("rules", [])
 if isinstance(policy.get("rules"), str):
     policy["rules"] = [policy["rules"]]
@@ -81,6 +83,14 @@ elif action == "title":
         sys.exit(2)
     policy["title"] = title
     message = "title"
+elif action == "scope":
+    allowed = {"task", "parallel", "steer", "all"}
+    scope = [part.strip().lower() for part in value.split(",") if part.strip()]
+    if not scope or any(part not in allowed for part in scope):
+        print("bad_scope")
+        sys.exit(2)
+    policy["applyTo"] = scope
+    message = "scope"
 else:
     print("unknown_action")
     sys.exit(2)
@@ -111,6 +121,10 @@ print(f"  title      {data.get('title', 'Operator Constitution')}")
 print(f"  mode       {data.get('mode', 'prepend')}")
 agents = data.get('agents') or []
 print(f"  agents     {', '.join(agents) if agents else 'all'}")
+apply_to = data.get('applyTo') or ['task', 'parallel', 'steer']
+if isinstance(apply_to, str):
+    apply_to = [part.strip() for part in apply_to.split(',') if part.strip()]
+print(f"  applies    {', '.join(apply_to) if apply_to else 'none'}")
 print("")
 rules = data.get('rules') or []
 if rules:
@@ -123,7 +137,7 @@ POLICY_PY
 }
 
 _policy_preview() {
-    local agent="" prompt="" task_type="code"
+    local agent="" prompt="" task_type="code" action="task"
     if [[ $# -lt 2 ]]; then
         _policy_help
         return 1
@@ -133,11 +147,12 @@ _policy_preview() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --type|-t) task_type="${2:-code}"; shift 2 ;;
+            --action|-a) action="${2:-task}"; shift 2 ;;
             *) shift ;;
         esac
     done
     out_header "Policy Preview"
-    fleet_policy_apply "$prompt" "$agent" "$task_type"
+    fleet_policy_apply "$prompt" "$agent" "$task_type" "$action"
 }
 
 cmd_policy() {
@@ -170,6 +185,11 @@ cmd_policy() {
             if [[ $# -lt 2 ]]; then echo "  Usage: fleet policy title \"<title>\""; return 1; fi
             result="$(_policy_update title "$2")" || { out_fail "Could not set title"; return 1; }
             [ "$result" = "title" ] && out_ok "Updated constitution title"
+            ;;
+        scope)
+            if [[ $# -lt 2 ]]; then echo "  Usage: fleet policy scope task,parallel,steer"; return 1; fi
+            result="$(_policy_update scope "$2")" || { out_fail "Scope must use task, parallel, steer, or all"; return 1; }
+            [ "$result" = "scope" ] && out_ok "Updated constitution scope"
             ;;
         preview) _policy_preview "${@:2}" ;;
         help|--help|-h) _policy_help ;;

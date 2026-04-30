@@ -100,7 +100,7 @@ fleet sitrep
 | Command | Description |
 |---------|-------------|
 | `fleet task <agent> "<prompt>"` | Dispatch a task to an agent, stream response live |
-| `fleet steer <agent> "<message>"` | Send a mid-session correction to a running agent |
+| `fleet steer <agent> "<message>"` | Send a mid-session correction to a running agent, with policy injection when enabled |
 | `fleet watch <agent>` | Live session tail: polls every 3s, shows new messages as they arrive |
 | `fleet parallel "<task>"` | Decompose into subtasks, assign by type, dispatch all concurrently |
 | `fleet kill <agent>` | Send a graceful stop signal to an agent session |
@@ -125,9 +125,10 @@ fleet sitrep
 | `fleet policy add "<rule>"` | Add a rule and enable the constitution |
 | `fleet policy rm <index>` / `fleet policy clear` | Remove one rule or clear all rules |
 | `fleet policy title "<title>"` | Customize the rule block title |
+| `fleet policy scope task,parallel,steer` | Choose which commands receive the rule block |
 | `fleet policy preview <agent> "<prompt>"` | Preview the exact task prompt after constitution injection |
 
-Set `constitution.enabled` in config or use `fleet policy add` to prepend custom rules to `fleet task` and `fleet parallel` dispatches. This is useful for team rules such as required tests, repository instructions, or no history rewrite unless the operator declares an emergency.
+Set `constitution.enabled` in config or use `fleet policy add` to prepend custom rules to `fleet task`, `fleet parallel`, and `fleet steer` dispatches. This is useful for team rules such as required tests, repository instructions, or no history rewrite unless the operator declares an emergency.
 
 ### Cross-Runtime (v4)
 
@@ -395,6 +396,7 @@ Fleet can optionally prepend a customizable operator constitution to every dispa
     "enabled": true,
     "title": "Operator Constitution",
     "mode": "prepend",
+    "applyTo": ["task", "parallel", "steer"],
     "rules": [
       "Read project instructions before editing files",
       "Run verification before reporting completion",
@@ -404,7 +406,7 @@ Fleet can optionally prepend a customizable operator constitution to every dispa
 }
 ```
 
-Use `fleet policy` to inspect rules, `fleet policy add "Run tests before reporting completion"` to customize them, and `fleet policy preview coder "fix login tests"` to see the exact prompt before dispatch.
+Use `fleet policy` to inspect rules, `fleet policy add "Run tests before reporting completion"` to customize them, `fleet policy scope task,parallel,steer` to choose coverage, and `fleet policy preview coder "fix login tests"` to see the exact prompt before dispatch.
 
 ### Cross-Runtime Operation (v4)
 > Mix OpenClaw agents with Docker containers, HTTP services, and OS processes in one config.
@@ -601,7 +603,7 @@ Fleet works with any agent on any runtime, not just OpenClaw.
 - [x] `fleet runtime list` / `fleet runtime rm`: parallel probe of every runtime, and removal by name
 - [x] User adapter directory: drop a custom `<type>.sh` into `~/.fleet/adapters/` (or `FLEET_ADAPTERS_DIR`) and it is auto-loaded
 - [x] `fleet agents`, `fleet health`, `fleet sitrep` now surface runtimes alongside agents, with delta tracking on runtime status changes
-- [x] Optional operator constitution: prepend customizable rules to dispatched agent tasks and preview them before execution
+- [x] Optional operator constitution: prepend customizable rules to task, parallel, and steer dispatches, then preview them before execution
 - [x] Backward compatible: existing configs default to OpenClaw adapter, zero migration needed
 
 ### v5: Planned (server mode and HTTP API)

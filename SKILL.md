@@ -182,11 +182,12 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | Show configured task rules | `fleet policy` |
 | Toggle task rules | `fleet policy enable`, `fleet policy disable` |
 | Add or remove a task rule | `fleet policy add "<rule>"`, `fleet policy rm <index>` |
+| Choose where rules apply | `fleet policy scope task,parallel,steer` |
 | Preview rules applied to a task | `fleet policy preview <agent> "<prompt>"` |
 
 ## Operator Constitution
 
-If `constitution.enabled` is true in the Fleet config, `fleet task` and `fleet parallel` prepend the configured rules to every dispatched task. Use this for operator rules that all agents should see before they act.
+If `constitution.enabled` is true in the Fleet config, `fleet task`, `fleet parallel`, and `fleet steer` prepend the configured rules to dispatched agent messages. Use this for operator rules that all agents should see before they act.
 
 Example config:
 
@@ -196,6 +197,7 @@ Example config:
     "enabled": true,
     "title": "Operator Constitution",
     "mode": "prepend",
+    "applyTo": ["task", "parallel", "steer"],
     "rules": [
       "Read project instructions before editing files",
       "Run verification before reporting completion",
@@ -211,6 +213,7 @@ Useful commands:
 fleet policy
 fleet policy enable
 fleet policy add "Run verification before reporting completion"
+fleet policy scope task,parallel,steer
 fleet policy rm 1
 fleet policy preview coder "fix failing tests" --type code
 ```
