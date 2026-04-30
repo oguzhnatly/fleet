@@ -12,6 +12,11 @@
   "repos": [],
   "constitution": {
     "enabled": false,
-    "rules": []
+    "rules": [],
+    "applyTo": [
+      "task",
+      "parallel",
+      "steer"
+    ]
   }
 }

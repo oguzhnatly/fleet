@@ -285,11 +285,17 @@ lock = threading.Lock()
 def now_ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def apply_policy(prompt, agent, task_type):
+def apply_policy(prompt, agent, task_type, action="parallel"):
     if not policy.get("enabled", False):
         return prompt
     only_agents = policy.get("agents") or []
     if only_agents and agent not in only_agents:
+        return prompt
+    apply_to = policy.get("applyTo") or policy.get("apply_to") or policy.get("commands") or ["task", "parallel", "steer"]
+    if isinstance(apply_to, str):
+        apply_to = [part.strip() for part in apply_to.split(",")]
+    apply_to = [str(part).strip().lower() for part in apply_to if str(part).strip()]
+    if apply_to and action.lower() not in apply_to and "all" not in apply_to:
         return prompt
     rules = policy.get("rules") or []
     if isinstance(rules, str):

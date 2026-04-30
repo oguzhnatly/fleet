@@ -28,6 +28,7 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
     "title": "string: display title for the rule block",
     "mode": "string: prepend or append",
     "agents": "array: optional list of agent names to apply to",
+    "applyTo": "array: task, parallel, steer, or all",
     "rules": "array: ordered rule strings"
   },
   "runtimes": [
@@ -109,6 +110,7 @@ The optional `constitution` block prepends rules to prompts sent by `fleet task`
 | `title` | string | `Operator Constitution` | Header for the injected block |
 | `mode` | string | `prepend` | Use `prepend` or `append` |
 | `agents` | array | all agents | Optional allow list of agent names |
+| `applyTo` | array | `task`, `parallel`, `steer` | Commands that receive the rule block |
 | `rules` | array | empty | Ordered rule strings sent with each task |
 
 Example:
@@ -117,6 +119,7 @@ Example:
 {
   "constitution": {
     "enabled": true,
+    "applyTo": ["task", "parallel", "steer"],
     "rules": [
       "Read project instructions before editing files",
       "Run verification before reporting completion",
@@ -126,7 +129,7 @@ Example:
 }
 ```
 
-Use `fleet policy` to inspect the effective config, `fleet policy add "<rule>"` to customize it from the CLI, and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
+Use `fleet policy` to inspect the effective config, `fleet policy add "<rule>"` to customize it from the CLI, `fleet policy scope task,parallel,steer` to choose where it applies, and `fleet policy preview <agent> "<prompt>"` to preview the dispatch text.
 
 ## Runtime Configuration (v4)
 

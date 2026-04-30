@@ -82,7 +82,7 @@ cmd_task() {
 
     # ── Apply optional operator constitution ────────────────────────────────
     local dispatch_prompt
-    dispatch_prompt="$(fleet_policy_apply "$prompt" "$agent" "$task_type")"
+    dispatch_prompt="$(fleet_policy_apply "$prompt" "$agent" "$task_type" "task")"
 
     # ── Log dispatch ────────────────────────────────────────────────────────
     local task_id
