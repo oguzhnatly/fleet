@@ -68,6 +68,26 @@ for f in "$FLEET_ROOT"/examples/*/config.json "$FLEET_ROOT"/templates/configs/*.
 done
 
 echo ""
+echo "Operator Constitution"
+assert_output_contains "help contains policy" "fleet policy" "$FBASH" "$FLEET" help
+_TMP_POLICY_CFG=$(mktemp /tmp/fleet-policy-cfg.XXXXXX.json)
+cat > "$_TMP_POLICY_CFG" <<'CFGDATA'
+{"workspace":"~/workspace","agents":[{"name":"coder","port":48520}],"constitution":{"enabled":true,"title":"Team Constitution","rules":["Never rewrite shared history","Run verification before completion"]}}
+CFGDATA
+assert_output_contains "policy show lists configured rule" "Never rewrite shared history" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy"
+assert_output_contains "policy preview injects rule" "Run verification before completion" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy preview coder 'fix tests' --type code"
+assert_ok "policy apply prepends task" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG'; source '$FLEET_ROOT/lib/core/config.sh'; source '$FLEET_ROOT/lib/core/policy.sh'; out=\$(fleet_policy_apply 'fix tests' coder code); echo \"\$out\" | grep -q 'Team Constitution'; echo \"\$out\" | grep -q 'Task:'"
+cat > "$_TMP_POLICY_CFG" <<'CFGDATA'
+{"workspace":"~/workspace","agents":[{"name":"coder","port":48520}],"constitution":{"enabled":false,"rules":["Should not appear"]}}
+CFGDATA
+assert_ok "disabled policy leaves prompt unchanged" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG'; source '$FLEET_ROOT/lib/core/config.sh'; source '$FLEET_ROOT/lib/core/policy.sh'; out=\$(fleet_policy_apply 'fix tests' coder code); [ \"\$out\" = 'fix tests' ]"
+rm -f "$_TMP_POLICY_CFG"
+
+echo ""
 echo "Trust Engine (v3)"
 assert_ok "trust.sh syntax" bash -n "$FLEET_ROOT/lib/core/trust.sh"
 assert_ok "trust command syntax" bash -n "$FLEET_ROOT/lib/commands/trust.sh"

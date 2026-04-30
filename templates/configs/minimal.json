@@ -9,5 +9,9 @@
   "agents": [],
   "runtimes": [],
   "endpoints": [],
-  "repos": []
+  "repos": [],
+  "constitution": {
+    "enabled": false,
+    "rules": []
+  }
 }

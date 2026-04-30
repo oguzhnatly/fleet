@@ -44,20 +44,58 @@
     }
   ],
   "endpoints": [
-    { "name": "website", "url": "https://example.com", "expectedStatus": 200 },
-    { "name": "api", "url": "https://api.example.com/health", "expectedStatus": 200 },
-    { "name": "docs", "url": "https://docs.example.com", "expectedStatus": 200, "timeout": 10 }
+    {
+      "name": "website",
+      "url": "https://example.com",
+      "expectedStatus": 200
+    },
+    {
+      "name": "api",
+      "url": "https://api.example.com/health",
+      "expectedStatus": 200
+    },
+    {
+      "name": "docs",
+      "url": "https://docs.example.com",
+      "expectedStatus": 200,
+      "timeout": 10
+    }
   ],
   "runtimes": [
-    { "name": "billing-api", "adapter": "http", "url": "https://billing.example.com/health", "expectedStatus": 200 },
-    { "name": "postgres", "adapter": "docker", "container": "postgres" },
-    { "name": "tailscaled", "adapter": "process", "process": "tailscaled" }
+    {
+      "name": "billing-api",
+      "adapter": "http",
+      "url": "https://billing.example.com/health",
+      "expectedStatus": 200
+    },
+    {
+      "name": "postgres",
+      "adapter": "docker",
+      "container": "postgres"
+    },
+    {
+      "name": "tailscaled",
+      "adapter": "process",
+      "process": "tailscaled"
+    }
   ],
   "repos": [
-    { "name": "frontend", "repo": "myorg/frontend" },
-    { "name": "backend", "repo": "myorg/backend" },
-    { "name": "mobile", "repo": "myorg/mobile" },
-    { "name": "infra", "repo": "myorg/infrastructure" }
+    {
+      "name": "frontend",
+      "repo": "myorg/frontend"
+    },
+    {
+      "name": "backend",
+      "repo": "myorg/backend"
+    },
+    {
+      "name": "mobile",
+      "repo": "myorg/mobile"
+    },
+    {
+      "name": "infra",
+      "repo": "myorg/infrastructure"
+    }
   ],
   "services": [
     "openclaw-gateway",
@@ -65,8 +103,20 @@
     "openclaw-gateway-reviewer"
   ],
   "linear": {
-    "teams": ["PROJ"],
+    "teams": [
+      "PROJ"
+    ],
     "apiKeyEnv": "LINEAR_API_KEY"
   },
-  "skillsDir": ""
+  "skillsDir": "",
+  "constitution": {
+    "enabled": true,
+    "title": "Operator Constitution",
+    "mode": "prepend",
+    "rules": [
+      "Read project instructions before editing files",
+      "Run the smallest meaningful verification before reporting completion",
+      "Do not rewrite shared git history unless the operator explicitly declares an emergency"
+    ]
+  }
 }
