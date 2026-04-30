@@ -17,6 +17,7 @@
       "task",
       "parallel",
       "steer"
-    ]
+    ],
+    "required": false
   }
 }

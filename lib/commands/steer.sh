@@ -21,7 +21,13 @@ cmd_steer() {
         return 1
     fi
 
-    local dispatch_message
+    local policy_guard dispatch_message
+    policy_guard="$(fleet_policy_guard "$agent" "steer" "steer")"
+    if [ "$policy_guard" != "ok" ]; then
+        out_fail "$policy_guard"
+        echo "       Run: fleet policy"
+        return 1
+    fi
     dispatch_message="$(fleet_policy_apply "$message" "$agent" "steer" "steer")"
 
     out_header "Fleet Steer"

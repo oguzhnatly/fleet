@@ -285,6 +285,30 @@ lock = threading.Lock()
 def now_ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+def policy_guard(agent, task_type, action="parallel"):
+    required = bool(policy.get("required", False) or policy.get("strict", False))
+    if not required:
+        return None
+    apply_to = policy.get("applyTo") or policy.get("apply_to") or policy.get("commands") or ["task", "parallel", "steer"]
+    if isinstance(apply_to, str):
+        apply_to = [part.strip() for part in apply_to.split(",")]
+    apply_to = [str(part).strip().lower() for part in apply_to if str(part).strip()]
+    if apply_to and action.lower() not in apply_to and "all" not in apply_to:
+        return None
+    only_agents = policy.get("agents") or []
+    if only_agents and agent not in only_agents:
+        return f"constitution required but agent '{agent}' is outside constitution scope"
+    rules = policy.get("rules") or []
+    if isinstance(rules, str):
+        rules = [rules]
+    rules = [str(r).strip() for r in rules if str(r).strip()]
+    prefix = str(policy.get("prefix") or policy.get("prompt") or "").strip()
+    if not policy.get("enabled", False):
+        return "constitution required but disabled"
+    if not rules and not prefix:
+        return "constitution required but has no rules"
+    return None
+
 def apply_policy(prompt, agent, task_type, action="parallel"):
     if not policy.get("enabled", False):
         return prompt
@@ -341,6 +365,12 @@ def run_subtask(st):
     if not port:
         with lock:
             results[agent_name] = {"ok": False, "error": f"agent '{agent_name}' not configured"}
+        return
+
+    guard_error = policy_guard(agent_name, task_type, "parallel")
+    if guard_error:
+        with lock:
+            results[agent_name] = {"ok": False, "error": guard_error}
         return
 
     task_id = str(uuid.uuid4())[:8]

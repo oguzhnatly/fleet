@@ -181,13 +181,14 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | List adapters and their bindings | `fleet adapters` (v4) |
 | Show configured task rules | `fleet policy` |
 | Toggle task rules | `fleet policy enable`, `fleet policy disable` |
+| Require or relax rule enforcement | `fleet policy require`, `fleet policy optional` |
 | Add or remove a task rule | `fleet policy add "<rule>"`, `fleet policy rm <index>` |
 | Choose where rules apply | `fleet policy scope task,parallel,steer` |
 | Preview rules applied to a task | `fleet policy preview <agent> "<prompt>"` |
 
 ## Operator Constitution
 
-If `constitution.enabled` is true in the Fleet config, `fleet task`, `fleet parallel`, and `fleet steer` prepend the configured rules to dispatched agent messages. Use this for operator rules that all agents should see before they act.
+If `constitution.enabled` is true in the Fleet config, `fleet task`, `fleet parallel`, and `fleet steer` prepend the configured rules to dispatched agent messages. If `constitution.required` is true, scoped dispatches fail until valid rules are configured. Use this for operator rules that all agents should see before they act.
 
 Example config:
 
@@ -197,6 +198,7 @@ Example config:
     "enabled": true,
     "title": "Operator Constitution",
     "mode": "prepend",
+    "required": true,
     "applyTo": ["task", "parallel", "steer"],
     "rules": [
       "Read project instructions before editing files",
@@ -212,6 +214,7 @@ Useful commands:
 ```bash
 fleet policy
 fleet policy enable
+fleet policy require
 fleet policy add "Run verification before reporting completion"
 fleet policy scope task,parallel,steer
 fleet policy rm 1
