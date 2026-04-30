@@ -180,6 +180,8 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | Live status of every runtime | `fleet runtime list` (v4) |
 | List adapters and their bindings | `fleet adapters` (v4) |
 | Show configured task rules | `fleet policy` |
+| Toggle task rules | `fleet policy enable`, `fleet policy disable` |
+| Add or remove a task rule | `fleet policy add "<rule>"`, `fleet policy rm <index>` |
 | Preview rules applied to a task | `fleet policy preview <agent> "<prompt>"` |
 
 ## Operator Constitution
@@ -207,6 +209,9 @@ Useful commands:
 
 ```bash
 fleet policy
+fleet policy enable
+fleet policy add "Run verification before reporting completion"
+fleet policy rm 1
 fleet policy preview coder "fix failing tests" --type code
 ```
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet policy: Show and preview optional operator constitution injection.
+# fleet policy: Manage optional operator constitution injection.
 
 _policy_help() {
     cat <<'HELP'
@@ -7,6 +7,12 @@ _policy_help() {
   Usage:
     fleet policy
     fleet policy show
+    fleet policy enable
+    fleet policy disable
+    fleet policy add "<rule>"
+    fleet policy rm <index>
+    fleet policy clear
+    fleet policy title "<title>"
     fleet policy preview <agent> "<prompt>" [--type code|review|research|deploy|qa]
 
   Config key:
@@ -16,12 +22,83 @@ _policy_help() {
 HELP
 }
 
-_policy_show() {
+_policy_require_config() {
     if ! fleet_has_config; then
         out_fail "No config at $FLEET_CONFIG_PATH"
         echo "       Run: fleet init"
         return 1
     fi
+}
+
+_policy_update() {
+    local action="$1" value="${2:-}"
+    _policy_require_config || return 1
+    python3 - "$FLEET_CONFIG_PATH" "$action" "$value" <<'POLICY_UPDATE_PY'
+import json, os, sys
+path, action, value = sys.argv[1:4]
+with open(path) as f:
+    cfg = json.load(f)
+policy = cfg.setdefault("constitution", {})
+policy.setdefault("enabled", False)
+policy.setdefault("title", "Operator Constitution")
+policy.setdefault("mode", "prepend")
+policy.setdefault("rules", [])
+if isinstance(policy.get("rules"), str):
+    policy["rules"] = [policy["rules"]]
+message = "updated"
+if action == "enable":
+    policy["enabled"] = True
+    message = "enabled"
+elif action == "disable":
+    policy["enabled"] = False
+    message = "disabled"
+elif action == "add":
+    rule = value.strip()
+    if not rule:
+        print("empty_rule")
+        sys.exit(2)
+    policy["rules"].append(rule)
+    policy["enabled"] = True
+    message = f"added:{len(policy['rules'])}"
+elif action == "rm":
+    try:
+        idx = int(value)
+    except Exception:
+        print("bad_index")
+        sys.exit(2)
+    if idx < 1 or idx > len(policy["rules"]):
+        print("bad_index")
+        sys.exit(2)
+    policy["rules"].pop(idx - 1)
+    message = "removed"
+elif action == "clear":
+    policy["rules"] = []
+    message = "cleared"
+elif action == "title":
+    title = value.strip()
+    if not title:
+        print("empty_title")
+        sys.exit(2)
+    policy["title"] = title
+    message = "title"
+else:
+    print("unknown_action")
+    sys.exit(2)
+tmp = path + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(cfg, f, indent=2)
+    f.write("\n")
+os.replace(tmp, path)
+try:
+    os.chmod(path, 0o600)
+except Exception:
+    pass
+print(message)
+POLICY_UPDATE_PY
+}
+
+_policy_show() {
+    _policy_require_config || return 1
     out_header "Operator Constitution"
     python3 - "$(fleet_policy_summary_json)" <<'POLICY_PY'
 import json, sys
@@ -64,8 +141,36 @@ _policy_preview() {
 }
 
 cmd_policy() {
+    local result
     case "${1:-show}" in
-        show)    _policy_show ;;
+        show) _policy_show ;;
+        enable)
+            result="$(_policy_update enable)" || return 1
+            [ "$result" = "enabled" ] && out_ok "Operator constitution enabled"
+            ;;
+        disable)
+            result="$(_policy_update disable)" || return 1
+            [ "$result" = "disabled" ] && out_ok "Operator constitution disabled"
+            ;;
+        add)
+            if [[ $# -lt 2 ]]; then echo "  Usage: fleet policy add \"<rule>\""; return 1; fi
+            result="$(_policy_update add "$2")" || { out_fail "Could not add rule"; return 1; }
+            out_ok "Added constitution rule"
+            ;;
+        rm|remove)
+            if [[ $# -lt 2 ]]; then echo "  Usage: fleet policy rm <index>"; return 1; fi
+            result="$(_policy_update rm "$2")" || { out_fail "Rule index not found"; return 1; }
+            [ "$result" = "removed" ] && out_ok "Removed constitution rule"
+            ;;
+        clear)
+            result="$(_policy_update clear)" || return 1
+            [ "$result" = "cleared" ] && out_ok "Cleared constitution rules"
+            ;;
+        title)
+            if [[ $# -lt 2 ]]; then echo "  Usage: fleet policy title \"<title>\""; return 1; fi
+            result="$(_policy_update title "$2")" || { out_fail "Could not set title"; return 1; }
+            [ "$result" = "title" ] && out_ok "Updated constitution title"
+            ;;
         preview) _policy_preview "${@:2}" ;;
         help|--help|-h) _policy_help ;;
         *) _policy_help; return 1 ;;

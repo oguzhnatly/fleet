@@ -121,9 +121,13 @@ fleet sitrep
 | Command | Description |
 |---------|-------------|
 | `fleet policy` | Show configured constitution status, scope, and rules |
+| `fleet policy enable` / `fleet policy disable` | Toggle constitution injection |
+| `fleet policy add "<rule>"` | Add a rule and enable the constitution |
+| `fleet policy rm <index>` / `fleet policy clear` | Remove one rule or clear all rules |
+| `fleet policy title "<title>"` | Customize the rule block title |
 | `fleet policy preview <agent> "<prompt>"` | Preview the exact task prompt after constitution injection |
 
-Set `constitution.enabled` in config to prepend custom rules to `fleet task` and `fleet parallel` dispatches. This is useful for team rules such as required tests, repository instructions, or no history rewrite unless the operator declares an emergency.
+Set `constitution.enabled` in config or use `fleet policy add` to prepend custom rules to `fleet task` and `fleet parallel` dispatches. This is useful for team rules such as required tests, repository instructions, or no history rewrite unless the operator declares an emergency.
 
 ### Cross-Runtime (v4)
 
@@ -400,7 +404,7 @@ Fleet can optionally prepend a customizable operator constitution to every dispa
 }
 ```
 
-Use `fleet policy` to inspect rules and `fleet policy preview coder "fix login tests"` to see the exact prompt before dispatch.
+Use `fleet policy` to inspect rules, `fleet policy add "Run tests before reporting completion"` to customize them, and `fleet policy preview coder "fix login tests"` to see the exact prompt before dispatch.
 
 ### Cross-Runtime Operation (v4)
 > Mix OpenClaw agents with Docker containers, HTTP services, and OS processes in one config.
