@@ -29,6 +29,8 @@ source "$FLEET_ROOT/lib/core/config.sh"
 source "$FLEET_ROOT/lib/core/output.sh"
 source "$FLEET_ROOT/lib/core/state.sh"
 source "$FLEET_ROOT/lib/core/trust.sh"
+source "$FLEET_ROOT/lib/core/adapters.sh"
+export FLEET_ROOT
 
 # ── Load commands ───────────────────────────────────────────────────────────
 for cmd_file in "$FLEET_ROOT/lib/commands/"*.sh; do
@@ -124,6 +126,13 @@ cmd_help() {
     fleet score [<agent>]             Per-task-type reliability breakdown
     fleet score <agent> --type code   Filter score to one task type
 
+  CROSS RUNTIME (v4)
+    fleet adapters                    List adapters and bindings
+    fleet runtime add <name> <type>   Register a runtime (openclaw|http|docker|process)
+    fleet runtime test <name>         One off probe of a runtime or agent
+    fleet runtime list                List runtimes with live status
+    fleet runtime rm <name>           Remove a runtime
+
   DEVELOPMENT
     fleet ci [filter]         GitHub CI status across repos
     fleet skills              List installed ClawHub skills
@@ -167,6 +176,8 @@ case "${1:-help}" in
     init|setup)          cmd_init ;;
     trust)               cmd_trust "${@:2}" ;;
     score)               cmd_score "${@:2}" ;;
+    adapters)            cmd_adapters ;;
+    runtime|runtimes)    cmd_runtime "${@:2}" ;;
     update)              cmd_update "${@:2}" ;;
     help|--help|-h)      cmd_help ;;
     *)

@@ -9,13 +9,19 @@ cmd_agents() {
         return 1
     fi
 
+    CLR_GREEN="$CLR_GREEN" CLR_RED="$CLR_RED" CLR_YELLOW="$CLR_YELLOW" \
+    CLR_DIM="$CLR_DIM" CLR_RESET="$CLR_RESET" \
     python3 - "$FLEET_CONFIG_PATH" <<'AGENTS_PY'
-import json, subprocess, sys, time
+import json, os, subprocess, sys, time
 
 with open(sys.argv[1]) as f:
     config = json.load(f)
 
-G = "\033[32m"; R = "\033[31m"; Y = "\033[33m"; D = "\033[2m"; N = "\033[0m"
+G = os.environ.get("CLR_GREEN", "")
+R = os.environ.get("CLR_RED", "")
+Y = os.environ.get("CLR_YELLOW", "")
+D = os.environ.get("CLR_DIM", "")
+N = os.environ.get("CLR_RESET", "")
 
 # Main gateway
 gw = config.get("gateway", {})
@@ -97,4 +103,19 @@ for agent in agents:
 
     print(f"  {icon} {aname:16} {arole:16} {amodel:30} :{aport:<6} {status} {D}{ms}ms{N}")
 AGENTS_PY
+
+    # ── v4: cross runtime entries (adapter layer) ───────────────────────────
+    fleet_adapter_load_all
+    local _runtime_entries=()
+    local _line _kind
+    while IFS= read -r _line; do
+        _kind="${_line%%$'\t'*}"
+        [ "$_kind" = "runtime" ] || continue
+        _runtime_entries+=("${_line#*$'\t'}")
+    done < <(fleet_adapter_iter_entries)
+
+    if [ "${#_runtime_entries[@]}" -gt 0 ]; then
+        out_section "Runtimes (v4)"
+        fleet_adapter_probe_parallel "${_runtime_entries[@]}"
+    fi
 }

@@ -51,7 +51,24 @@ cmd_backup() {
 
 cmd_restore() {
     local latest
-    latest=$(ls -dt "$HOME/.fleet/backups"/*/ 2>/dev/null | head -1)
+    latest=$(python3 - "$HOME/.fleet/backups" <<'PY_LATEST_BACKUP'
+import os, sys
+root = sys.argv[1]
+best = ""
+best_mtime = -1
+try:
+    for name in os.listdir(root):
+        path = os.path.join(root, name)
+        if os.path.isdir(path):
+            mtime = os.path.getmtime(path)
+            if mtime > best_mtime:
+                best = path
+                best_mtime = mtime
+except Exception:
+    pass
+print(best)
+PY_LATEST_BACKUP
+)
 
     if [ -z "$latest" ]; then
         out_header "Restore"

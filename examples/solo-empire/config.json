@@ -4,21 +4,21 @@
     "port": 48391,
     "name": "brain",
     "role": "coordinator",
-    "model": "claude-opus-4"
+    "model": "strategic-default"
   },
   "agents": [
     {
       "name": "coder",
       "port": 48520,
       "role": "implementation",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-coder-token"
     },
     {
       "name": "reviewer",
       "port": 48540,
       "role": "code-review",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-reviewer-token"
     }
   ],

@@ -23,6 +23,24 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
       "token": "string: auth token for HTTP API"
     }
   ],
+  "runtimes": [
+    {
+      "name": "string: unique runtime name",
+      "adapter": "string: openclaw, http, docker, process, or a custom adapter type",
+      "role": "string: optional display role",
+      "model": "string: optional display label",
+      "host": "string: host for openclaw adapter (default: 127.0.0.1)",
+      "port": "number: port for openclaw adapter",
+      "url": "string: health URL for http adapter",
+      "versionUrl": "string: optional version endpoint for http adapter",
+      "expectedStatus": "number: expected HTTP status for http adapter (default: 200)",
+      "method": "string: HTTP method for http adapter (default: GET)",
+      "headers": "object: extra HTTP headers for http adapter",
+      "container": "string: Docker container name or id for docker adapter",
+      "process": "string: process name or pattern for process adapter",
+      "matchFull": "boolean: use full command matching for process adapter"
+    }
+  ],
   "endpoints": [
     {
       "name": "string: display name",
@@ -56,6 +74,8 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
 | `FLEET_LOG` | Path to dispatch log file | `~/.fleet/log.jsonl` |
 | `FLEET_WORKSPACE` | Override workspace path | Config value |
 | `FLEET_STATE_DIR` | State persistence directory | `~/.fleet/state` |
+| `FLEET_ADAPTER_TIMEOUT` | Maximum seconds for a single adapter health probe | `6` |
+| `FLEET_ADAPTERS_DIR` | Directory for custom adapter scripts | `~/.fleet/adapters` |
 | `NO_COLOR` | Disable colored output | (unset) |
 
 ## Auto-Detection
@@ -71,6 +91,49 @@ See the `examples/` directory for recommended configurations:
 - **solo-empire**: One coordinator + 2 employees
 - **dev-team**: Team leads with specialized developers
 - **research-lab**: Research director with analysts and writers
+
+## Runtime Configuration (v4)
+
+Fleet v4 adds a `runtimes` array for non coordinator targets. This is additive. Existing v1, v2, and v3 configs continue to work without a migration.
+
+### Adapter fields
+
+| Adapter | Required fields | Verification mode |
+|---------|-----------------|-------------------|
+| `openclaw` | `port` | verified through `/health` or authenticated `/v1/models` fallback |
+| `http` | `url` | verified through configured HTTP response status |
+| `docker` | `container` | verified through Docker daemon inspection when the Docker CLI is available |
+| `process` | `process` | inferred through `pgrep`, no protocol handshake |
+
+### Example
+
+```json
+{
+  "runtimes": [
+    {
+      "name": "billing-api",
+      "adapter": "http",
+      "url": "http://127.0.0.1:8080/health",
+      "versionUrl": "http://127.0.0.1:8080/version",
+      "role": "api"
+    },
+    {
+      "name": "worker",
+      "adapter": "docker",
+      "container": "worker-service"
+    },
+    {
+      "name": "scheduler",
+      "adapter": "process",
+      "process": "cron"
+    }
+  ]
+}
+```
+
+### Custom adapters
+
+Drop a `<type>.sh` file into `~/.fleet/adapters/` or set `FLEET_ADAPTERS_DIR`. A custom adapter must define six functions named `adapter_<type>_describe`, `adapter_<type>_verified`, `adapter_<type>_required`, `adapter_<type>_health`, `adapter_<type>_info`, and `adapter_<type>_version`.
 
 ## Trust Configuration (v3)
 

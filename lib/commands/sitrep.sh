@@ -4,6 +4,8 @@
 cmd_sitrep() {
     local hours="${1:-4}"
 
+    CLR_GREEN="$CLR_GREEN" CLR_RED="$CLR_RED" CLR_YELLOW="$CLR_YELLOW" \
+    CLR_BLUE="$CLR_BLUE" CLR_DIM="$CLR_DIM" CLR_BOLD="$CLR_BOLD" CLR_RESET="$CLR_RESET" \
     python3 - "$FLEET_CONFIG_PATH" "$FLEET_STATE_DIR" "$hours" <<'SITREP_PY'
 import json, subprocess, sys, os, time
 from datetime import datetime, timezone
@@ -12,8 +14,13 @@ config_path = sys.argv[1]
 state_dir = sys.argv[2]
 hours = sys.argv[3]
 
-G = "\033[32m"; R = "\033[31m"; Y = "\033[33m"; B = "\033[34m"
-D = "\033[2m"; BOLD = "\033[1m"; N = "\033[0m"
+G = os.environ.get("CLR_GREEN", "")
+R = os.environ.get("CLR_RED", "")
+Y = os.environ.get("CLR_YELLOW", "")
+B = os.environ.get("CLR_BLUE", "")
+D = os.environ.get("CLR_DIM", "")
+BOLD = os.environ.get("CLR_BOLD", "")
+N = os.environ.get("CLR_RESET", "")
 
 # Load config
 config = {}
@@ -107,6 +114,58 @@ for agent in config.get("agents", []):
     except Exception:
         agents[agent["name"]] = "error"
 
+# v4: runtimes via adapter dispatcher (shell out to fleet adapter health)
+runtimes = {}
+runtimes_meta = {}
+fleet_root = os.environ.get("FLEET_ROOT", "")
+rt_list = config.get("runtimes", [])
+if rt_list and fleet_root and os.path.isdir(fleet_root):
+    # Probe runtimes in parallel so a slow target does not stall sitrep.
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _probe_runtime(rt):
+        rname = rt.get("name", "?")
+        atype = rt.get("adapter") or rt.get("type") or "openclaw"
+        mode = "unknown"
+        try:
+            r = subprocess.run(
+                ["bash", "-c",
+                 f'source "{fleet_root}/lib/core/adapters.sh" 2>/dev/null; '
+                 f'fleet_adapter_load_all; '
+                 f'if fleet_adapter_exists "$2"; then adapter_"$2"_verified; else echo unknown; fi; '
+                 f'fleet_adapter_health "$1"',
+                 "_", json.dumps(rt), atype],
+                capture_output=True, text=True, timeout=10,
+                env={**os.environ, "FLEET_ROOT": fleet_root}
+            )
+            lines = [ln for ln in (r.stdout or "").splitlines() if ln.strip()]
+            if lines:
+                mode = lines[0].strip() or "unknown"
+            line = lines[-1] if lines else "{}"
+            d = json.loads(line)
+        except Exception:
+            d = {}
+        return rname, atype, mode, d
+
+    with ThreadPoolExecutor(max_workers=min(8, max(1, len(rt_list)))) as pool:
+        futures = [pool.submit(_probe_runtime, rt) for rt in rt_list]
+        for fut in as_completed(futures):
+            rname, atype, mode, d = fut.result()
+            runtimes[rname] = d.get("status", "error")
+            runtimes_meta[rname] = {
+                "adapter": atype,
+                "mode": mode,
+                "ms": d.get("elapsed_ms", 0),
+            }
+
+elif rt_list:
+    # FLEET_ROOT missing: report runtimes as unprobed but list them.
+    for rt in rt_list:
+        rname = rt.get("name", "?")
+        atype = rt.get("adapter") or rt.get("type") or "openclaw"
+        runtimes[rname] = "unprobed"
+        runtimes_meta[rname] = {"adapter": atype, "mode": "unknown", "ms": 0}
+
 # Linear (optional)
 linear = {}
 linear_conf = config.get("linear", {})
@@ -178,10 +237,15 @@ for team, count in linear.items():
         if delta != 0:
             changes.append(f"{team} tickets: {'+' if delta > 0 else ''}{delta}")
 
+prev_rt = prev.get("runtimes", {})
+for rname, status in runtimes.items():
+    if prev_rt.get(rname) and prev_rt[rname] != status:
+        changes.append(f"runtime {rname}: {prev_rt[rname]} → {status}")
+
 # Save state
 current = {
     "timestamp": timestamp, "ci": ci, "endpoints": endpoints,
-    "agents": agents, "linear": linear,
+    "agents": agents, "runtimes": runtimes, "linear": linear,
     "vps": {"mem_pct": mem_pct, "disk_pct": disk_pct}
 }
 with open(state_file, "w") as f:
@@ -216,6 +280,25 @@ if ci:
             print(f"  {Y}⚡{N} {repo} (in progress)")
         else:
             print(f"  {D}?{N}  {repo} ({status})")
+
+# Runtimes (v4)
+if runtimes:
+    online_rt = sum(1 for s in runtimes.values() if s == "online")
+    total_rt = len(runtimes)
+    rcolor = G if online_rt == total_rt else (Y if online_rt > 0 else R)
+    print(f"\n{BOLD}Runtimes{N}  {rcolor}{online_rt}/{total_rt} online{N}")
+    for rname, status in runtimes.items():
+        meta = runtimes_meta.get(rname, {})
+        atype = meta.get("adapter", "?"); mode = meta.get("mode", "unknown")
+        verify_tag = f"{D}{mode}{N}" if mode == "verified" else f"{Y}{mode}{N}"
+        if status == "online":
+            print(f"  {G}⬢{N} {rname} {D}({atype}){N} {verify_tag}")
+        elif status in ("starting","degraded","auth_failed"):
+            print(f"  {Y}⚠{N} {rname} {status} {D}({atype}){N} {verify_tag}")
+        elif status == "unprobed":
+            print(f"  {D}?{N}  {rname} unprobed {D}({atype}, FLEET_ROOT not set){N}")
+        else:
+            print(f"  {R}⬡{N} {rname} {status} {D}({atype}){N} {verify_tag}")
 
 # Endpoints
 if endpoints:

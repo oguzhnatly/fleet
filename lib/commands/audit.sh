@@ -218,7 +218,24 @@ print(int((total - avail) / total * 100))
 
     _inc_checks
     local latest_backup
-    latest_backup=$(ls -dt "$HOME/.fleet/backups"/*/ 2>/dev/null | head -1 || true)
+    latest_backup=$(python3 - "$HOME/.fleet/backups" <<'PY_LATEST_BACKUP'
+import os, sys
+root = sys.argv[1]
+best = ""
+best_mtime = -1
+try:
+    for name in os.listdir(root):
+        path = os.path.join(root, name)
+        if os.path.isdir(path):
+            mtime = os.path.getmtime(path)
+            if mtime > best_mtime:
+                best = path
+                best_mtime = mtime
+except Exception:
+    pass
+print(best)
+PY_LATEST_BACKUP
+)
     if [ -n "$latest_backup" ]; then
         local backup_age_days
         backup_age_days=$(( ($(date +%s) - $(stat -c %Y "$latest_backup" 2>/dev/null || stat -f %m "$latest_backup" 2>/dev/null || echo "0")) / 86400 ))
