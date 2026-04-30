@@ -4,12 +4,12 @@
 
 ```
 ┌────────────────────────────────────────┐
-│         Director (Opus)                │
+│         Director (strategic)                │
 │    Research planning, synthesis        │
 ├──────────┬──────────┬────────┬────────┤
 │ Analyst  │  Writer  │Scraper │  Fact  │
-│ (Sonnet) │ (Sonnet) │(Codex) │ Check  │
-│  Data    │  Reports │  Web   │(Codex) │
+│ (review) │ (review) │(coding) │ Check  │
+│  Data    │  Reports │  Web   │(coding) │
 └──────────┴──────────┴────────┴────────┘
 ```
 

@@ -4,56 +4,56 @@
     "port": 48391,
     "name": "orchestrator",
     "role": "coordinator",
-    "model": "claude-opus-4"
+    "model": "strategic-default"
   },
   "agents": [
     {
       "name": "frontend-lead",
       "port": 48420,
       "role": "frontend-team-lead",
-      "model": "claude-sonnet-4",
+      "model": "review-default",
       "token": "emp-fe-lead-token"
     },
     {
       "name": "frontend-dev-1",
       "port": 48440,
       "role": "frontend-developer",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-fe-dev1-token"
     },
     {
       "name": "frontend-dev-2",
       "port": 48460,
       "role": "frontend-developer",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-fe-dev2-token"
     },
     {
       "name": "backend-lead",
       "port": 48520,
       "role": "backend-team-lead",
-      "model": "claude-sonnet-4",
+      "model": "review-default",
       "token": "emp-be-lead-token"
     },
     {
       "name": "backend-dev-1",
       "port": 48540,
       "role": "backend-developer",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-be-dev1-token"
     },
     {
       "name": "qa-lead",
       "port": 48620,
       "role": "qa-manager",
-      "model": "claude-sonnet-4",
+      "model": "review-default",
       "token": "emp-qa-lead-token"
     },
     {
       "name": "qa-tester",
       "port": 48640,
       "role": "qa-tester",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-qa-tester-token"
     }
   ],

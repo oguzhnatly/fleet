@@ -4,35 +4,35 @@
     "port": 48391,
     "name": "director",
     "role": "research-director",
-    "model": "claude-opus-4"
+    "model": "strategic-default"
   },
   "agents": [
     {
       "name": "analyst",
       "port": 48420,
       "role": "data-analyst",
-      "model": "claude-sonnet-4",
+      "model": "review-default",
       "token": "emp-analyst-token"
     },
     {
       "name": "writer",
       "port": 48440,
       "role": "technical-writer",
-      "model": "claude-sonnet-4",
+      "model": "review-default",
       "token": "emp-writer-token"
     },
     {
       "name": "scraper",
       "port": 48460,
       "role": "web-scraping",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-scraper-token"
     },
     {
       "name": "fact-checker",
       "port": 48480,
       "role": "verification",
-      "model": "codex",
+      "model": "coding-default",
       "token": "emp-factcheck-token"
     }
   ],

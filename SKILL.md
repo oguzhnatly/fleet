@@ -97,7 +97,7 @@ agentScope:
 
 ## Intent, Authorization, and Trust
 
-**Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator (a human who set up and runs the OpenClaw fleet). The operator installed this skill intentionally, knowing it enables autonomous fleet management.
+**Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator. Fleet is designed for OpenClaw, Claude Code, Codex, Cursor, Windsurf, and any coding agent or editor that can read a skill file and run shell commands. The operator installed this skill intentionally, knowing it enables autonomous fleet management.
 
 **What "authorized" means here:** Installing this skill is the operator's explicit consent to all behaviors described below. The skill contacts only the operator's own agent gateways (loopback), the operator's own GitHub repos via their authenticated gh CLI, and api.github.com for fleet's own release updates (documented, non-blocking, once per 24h). It does not escalate privileges beyond the installing user's home directory and does not take any action outside the local fleet the operator already controls.
 
@@ -117,7 +117,7 @@ agentScope:
 
 ---
 
-CLI toolkit for managing, dispatching to, and observing a fleet of OpenClaw agent gateways. The coordinator agent uses fleet to monitor employees, dispatch tasks, steer running sessions, watch live output, and review dispatch history.
+CLI toolkit for managing, dispatching to, and observing a fleet of OpenClaw agent gateways plus v4 runtimes such as HTTP services, Docker containers, and OS processes. The coordinator agent uses fleet to monitor employees, dispatch tasks, steer running sessions, watch live output, and review dispatch history.
 
 ## Security Model
 
@@ -175,6 +175,10 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | User asks "what changed?" | `fleet sitrep`, report deltas |
 | Scheduled morning report | `fleet sitrep 12` in cron |
 | Before deploying | `fleet health` + `fleet ci` |
+| Register a non-OpenClaw target | `fleet runtime add <name> <type> [options]` (v4) |
+| Probe one runtime end to end | `fleet runtime test <name>` (v4) |
+| Live status of every runtime | `fleet runtime list` (v4) |
+| List adapters and their bindings | `fleet adapters` (v4) |
 
 ## Auto-Setup
 
@@ -253,14 +257,14 @@ Create `~/.fleet/config.json`:
     "port": 48391,
     "name": "coordinator",
     "role": "coordinator",
-    "model": "claude-opus-4"
+    "model": "strategic-default"
   },
   "agents": [
     {
       "name": "coder",
       "port": 48520,
       "role": "implementation",
-      "model": "codex",
+      "model": "coding-default",
       "token": "your-agent-token"
     }
   ],
@@ -529,12 +533,12 @@ Shows all configured agent gateways with live health status, response time, mode
 ```
 Agent Fleet
 ───────────
-  ⬢ coordinator      coordinator      claude-opus-4               :48391 online 13ms
+  ⬢ coordinator      coordinator      strategic-default               :48391 online 13ms
   
-  ⬢ coder            implementation   codex                       :48520 online 8ms
-  ⬢ reviewer         code-review      codex                       :48540 online 9ms
-  ⬡ deployer         deployment       codex                       :48560 unreachable
-  ⬢ qa               quality-assurance codex                      :48580 online 7ms
+  ⬢ coder            implementation   coding-default                       :48520 online 8ms
+  ⬢ reviewer         code-review      coding-default                       :48540 online 9ms
+  ⬡ deployer         deployment       coding-default                       :48560 unreachable
+  ⬢ qa               quality-assurance coding-default                      :48580 online 7ms
 ```
 
 **Status indicators:**
@@ -696,6 +700,65 @@ The GitHub check runs as a detached background process once per 24 hours so ther
 is zero latency impact on normal fleet commands. The result is cached at
 `~/.fleet/state/update_check.json`.
 
+### `fleet adapters`
+
+Lists every adapter the fleet knows about, marked **verified** when the adapter
+performs a real protocol-level handshake or **inferred** when it only detects
+presence. Also shows the binding from each agent and runtime entry to its
+adapter, so you can see at a glance which runtime probe runs against each
+target.
+
+### `fleet runtime add <name> <type> [options]`
+
+Registers a new entry under the `runtimes` key in `~/.fleet/config.json`
+without manual JSON editing.
+
+**Adapter types and required options:**
+
+| Type | Required | Common options |
+|------|----------|----------------|
+| `openclaw` | `--port=<n>` | `--host`, `--token`, `--role`, `--model` |
+| `http`     | `--url=<URL>` | `--expected-status`, `--method`, `--token`, `--header K=V`, `--version-url` |
+| `docker`   | `--container=<name>` | `--role`, `--model` |
+| `process`  | `--process=<pat>` | `--match-full`, `--role` |
+
+Examples:
+
+```bash
+fleet runtime add billing-api http --url=https://billing.example.com/health
+fleet runtime add postgres docker --container=postgres
+fleet runtime add tailscale process --process=tailscaled
+fleet runtime add overflow openclaw --port=48490 --token=$OVERFLOW_TOKEN
+```
+
+The command refuses a name already used by an agent and writes the config
+atomically with `chmod 600`.
+
+### `fleet runtime test <name>`
+
+One-off probe of a runtime or agent. Animates a spinner while the health,
+info, and version probes run in parallel, then renders all three sections.
+Use when a runtime turns red in `sitrep` and you need a focused look.
+
+### `fleet runtime list`
+
+Live status of every registered runtime, probed in parallel with an animated
+progress indicator on TTY output.
+
+### `fleet runtime rm <name>`
+
+Removes a runtime from the config. Returns a clear error if the name is
+not found.
+
+### Custom Adapters
+
+Drop a `<type>.sh` file into `~/.fleet/adapters/` (or `FLEET_ADAPTERS_DIR`)
+with these six functions: `adapter_<type>_describe`, `adapter_<type>_verified`
+(echo `verified` or `inferred`), `adapter_<type>_required`, `adapter_<type>_health`,
+`adapter_<type>_info`, `adapter_<type>_version`. Each must complete within
+`FLEET_ADAPTER_TIMEOUT` seconds (default 6) and emit JSON on stdout. The
+runtime registry validates required fields per adapter before saving.
+
 ## Fleet Patterns
 
 Fleet supports multiple organizational architectures. Choose based on your needs:
@@ -704,20 +767,20 @@ Fleet supports multiple organizational architectures. Choose based on your needs
 One coordinator, 2-5 employees. Best for indie hackers and solo founders.
 
 ```
-         Coordinator (Opus)
+         Coordinator (strategic)
         /     |      \
     Coder  Reviewer  Deployer
-   (Codex)  (Codex)   (Codex)
+   (coding)  (coding)   (coding)
 ```
 
 ### Development Team
 Team leads coordinating specialized developers. Best for complex products.
 
 ```
-              Orchestrator (Opus)
+              Orchestrator (strategic)
             /        |         \
       FE Lead     BE Lead     QA Lead
-     (Sonnet)    (Sonnet)    (Sonnet)
+     (review)    (review)    (review)
        / \          |           |
     Dev1  Dev2    Dev1       Tester
 ```
@@ -726,7 +789,7 @@ Team leads coordinating specialized developers. Best for complex products.
 Specialized agents for knowledge work. Best for content and analysis.
 
 ```
-            Director (Opus)
+            Director (strategic)
           /     |      \       \
     Scraper  Analyst  Writer  Fact-Check
 ```

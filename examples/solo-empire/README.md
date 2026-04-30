@@ -4,11 +4,11 @@
 
 ```
 ┌──────────────────────────────┐
-│     Coordinator (Opus)       │
+│     Coordinator (strategic)       │
 │  Strategic decisions, plans  │
 ├──────────────┬───────────────┤
 │    Coder     │   Reviewer    │
-│  (Codex)     │   (Codex)     │
+│  (coding)     │   (coding)     │
 │  Write code  │  Review PRs   │
 └──────────────┴───────────────┘
 ```

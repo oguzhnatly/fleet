@@ -162,9 +162,11 @@ _ensure_path() {
     for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
         if [ -f "$rc" ]; then
             if ! grep -q '\.local/bin' "$rc" 2>/dev/null; then
-                echo '' >> "$rc"
-                echo '# Added by fleet: https://github.com/oguzhnatly/fleet' >> "$rc"
-                echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+                {
+                    printf '\n'
+                    printf '%s\n' '# Added by fleet: https://github.com/oguzhnatly/fleet'
+                    printf '%s\n' "export PATH=\"\$HOME/.local/bin:\$PATH\""
+                } >> "$rc"
                 out_ok "Added $bin_dir to PATH in $(basename "$rc")"
                 added=true
             else
@@ -180,6 +182,6 @@ _ensure_path() {
         out_info "PATH updated for current session"
     else
         out_warn "Could not find shell rc file. Add manually:"
-        echo '       export PATH="$HOME/.local/bin:$PATH"'
+        printf '%s\n' "       export PATH=\"\$HOME/.local/bin:\$PATH\""
     fi
 }

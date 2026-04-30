@@ -1,0 +1,76 @@
+{
+  "workspace": "~/workspace",
+  "gateway": {
+    "port": 48391,
+    "name": "coordinator",
+    "role": "coordinator",
+    "model": "default"
+  },
+  "agents": [
+    {
+      "name": "coder",
+      "port": 48520,
+      "role": "implementation",
+      "model": "coding-default",
+      "token": "your-token-here"
+    }
+  ],
+  "runtimes": [
+    {
+      "name": "billing-api",
+      "adapter": "http",
+      "url": "https://billing.example.com/health",
+      "expectedStatus": 200,
+      "role": "external-service"
+    },
+    {
+      "name": "auth-service",
+      "adapter": "http",
+      "url": "https://auth.example.com/healthz",
+      "expectedStatus": 200,
+      "token": "your-auth-probe-token",
+      "role": "external-service"
+    },
+    {
+      "name": "postgres",
+      "adapter": "docker",
+      "container": "postgres",
+      "role": "database"
+    },
+    {
+      "name": "redis",
+      "adapter": "docker",
+      "container": "redis",
+      "role": "cache"
+    },
+    {
+      "name": "tailscaled",
+      "adapter": "process",
+      "process": "tailscaled",
+      "role": "networking"
+    },
+    {
+      "name": "caddy",
+      "adapter": "process",
+      "process": "caddy",
+      "role": "reverse-proxy"
+    },
+    {
+      "name": "secondary-node",
+      "adapter": "openclaw",
+      "port": 48490,
+      "role": "overflow-agent"
+    }
+  ],
+  "endpoints": [
+    { "name": "production", "url": "https://myapp.example.com", "expectedStatus": 200 },
+    { "name": "api-docs", "url": "https://docs.example.com", "expectedStatus": 200 }
+  ],
+  "repos": [
+    { "name": "backend", "repo": "myorg/backend" },
+    { "name": "infra", "repo": "myorg/infrastructure" }
+  ],
+  "trust": {
+    "windowHours": 72
+  }
+}
