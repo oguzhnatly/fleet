@@ -1,14 +1,6 @@
 #!/bin/bash
-# fleet update  Check for newer fleet release on GitHub and install it.
-# Usage: fleet update [--check] [--force]
-#
-# Fetches the latest release tag from oguzhnatly/fleet on GitHub,
-# compares with the installed version, and upgrades when a newer one exists.
-# The version cache is refreshed every 24 hours automatically.
-#
-# Options:
-#   --check   Only report available updates. Never install anything.
-#   --force   Install the latest release even when already up to date.
+# fleet update: Check for newer Fleet release. Installation is explicit.
+# Usage: fleet update [--check] [--install] [--force] [--yes]
 
 FLEET_UPDATE_REPO="${FLEET_UPDATE_REPO:-oguzhnatly/fleet}"
 FLEET_UPDATE_CACHE="${FLEET_STATE_DIR:-${HOME}/.fleet/state}/update_check.json"
@@ -47,7 +39,6 @@ PY
 _update_cached_latest() {
     local now
     now=$(date +%s)
-    # Pass cache path as argument to avoid shell interpolation inside Python source
     if [[ -f "$FLEET_UPDATE_CACHE" ]]; then
         local cached_time
         cached_time=$(python3 - "$FLEET_UPDATE_CACHE" <<'PY'
@@ -104,40 +95,49 @@ PY
 )
     if [[ -n "$tag" && -z "$has_error" ]]; then
         mkdir -p "$(dirname "$FLEET_UPDATE_CACHE")"
-        # Write cache safely: pass tag, url, ts as argv to avoid injection from network values
+        chmod 700 "$(dirname "$FLEET_UPDATE_CACHE")" 2>/dev/null || true
         python3 - "$FLEET_UPDATE_CACHE" "$tag" "$url" "$now" <<'PY'
-import json, sys
+import json, os, sys
 cache_path = sys.argv[1]
 tag        = sys.argv[2]
 url        = sys.argv[3]
 ts         = int(sys.argv[4])
 with open(cache_path, "w") as f:
     json.dump({"tag": tag, "url": url, "ts": ts}, f)
+try:
+    os.chmod(cache_path, 0o600)
+except Exception:
+    pass
 PY
     fi
     printf '%s\n%s\n' "$tag" "$url"
 }
 
 cmd_update() {
-    local check_only=false force=false
+    local check_only=false force=false install=false assume_yes=false allow_unverified=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --check|-c)  check_only=true; shift ;;
+            --install)   install=true; shift ;;
             --force|-f)  force=true; shift ;;
+            --yes|-y)    assume_yes=true; shift ;;
+            --allow-unverified) allow_unverified=true; shift ;;
             --help|-h)
                 echo -e "  \\033[1mfleet update\\033[0m"
                 cat <<'HELP'
 
-  Usage: fleet update [--check] [--force]
+  Usage: fleet update [--check] [--install] [--force] [--yes]
 
-  Check for a newer fleet release on GitHub and install it automatically.
+  Check the latest GitHub release. The default command only reports status.
+  Installation requires --install and approval.
 
   Options:
-    --check   Only show whether an update is available. Never install.
-    --force   Reinstall even when already on the latest version.
-
-  The version check result is cached for 24 hours.
+    --check              Report available update without installing.
+    --install            Install after confirmation.
+    --force              Reinstall even when already on the latest version.
+    --yes                Skip confirmation after explicit operator approval.
+    --allow-unverified   Permit install when no release checksum is published.
 
 HELP
                 return 0 ;;
@@ -148,15 +148,19 @@ HELP
     echo -e "  \\033[1mfleet update\\033[0m"
     echo
 
+    if [[ "$FLEET_UPDATE_REPO" != "oguzhnatly/fleet" && -z "${FLEET_ALLOW_CUSTOM_UPDATE_REPO:-}" ]]; then
+        out_fail "Refusing update check from custom update repo: ${FLEET_UPDATE_REPO}"
+        out_info "Set FLEET_ALLOW_CUSTOM_UPDATE_REPO=1 only if you intentionally trust it."
+        return 1
+    fi
+
     out_info "Current version: ${FLEET_VERSION}"
     out_info "Checking ${FLEET_UPDATE_REPO} for updates..."
     echo
 
-    local info
+    local info latest_tag tarball_url
     info=$(_update_cached_latest)
-    local latest_tag
     latest_tag=$(echo "$info" | head -1)
-    local tarball_url
     tarball_url=$(echo "$info" | tail -1)
 
     if [[ -z "$latest_tag" ]]; then
@@ -173,7 +177,7 @@ HELP
         return 0
     fi
 
-    if [[ "$rel" == "newer" ]]; then
+    if [[ "$rel" == "older" ]]; then
         out_info "Latest release: ${latest_tag}  (you are ahead, development build)"
         if [[ "$force" == "false" ]]; then
             echo
@@ -181,42 +185,43 @@ HELP
         fi
     fi
 
-    if [[ "$rel" == "older" ]]; then
+    if [[ "$rel" == "newer" ]]; then
         out_warn "New version available: ${latest_tag}"
     fi
 
-    if [[ "$check_only" == "true" ]]; then
+    if [[ "$check_only" == "true" ]] || [[ "$install" == "false" ]]; then
         echo
-        out_info "Run  fleet update  to install."
+        out_info "Review the release first. Install with: fleet update --install"
         echo
         return 0
     fi
 
+    fleet_confirm_action "install ${latest_tag} from ${FLEET_UPDATE_REPO}" "This replaces the local Fleet files from a GitHub release archive." "$assume_yes" || return 1
+
     out_info "Installing ${latest_tag} from ${FLEET_UPDATE_REPO}..."
     echo
 
-    local tmp_dir
+    local tmp_dir archive checksum_file
     tmp_dir=$(mktemp -d)
-    local archive="${tmp_dir}/fleet.tar.gz"
-    local checksum_file="${tmp_dir}/fleet.sha256"
+    archive="${tmp_dir}/fleet.tar.gz"
+    checksum_file="${tmp_dir}/fleet.sha256"
 
-    # Fetch tarball
     if ! curl -fsSL "$tarball_url" -o "$archive" 2>/dev/null; then
         out_fail "Download failed. Check your network connection."
         rm -rf "$tmp_dir"
         return 1
     fi
 
-    # Fetch checksum file published alongside the release (fleet.sha256)
     local checksum_url="https://github.com/${FLEET_UPDATE_REPO}/releases/download/${latest_tag}/fleet.sha256"
     if curl -fsSL "$checksum_url" -o "$checksum_file" 2>/dev/null && [[ -s "$checksum_file" ]]; then
         local expected_hash actual_hash
         expected_hash=$(awk '{print $1}' "$checksum_file")
-        actual_hash=$(python3 -c "
+        actual_hash=$(python3 - "$archive" <<'PY_HASH' 2>/dev/null
 import hashlib, sys
 with open(sys.argv[1], 'rb') as f:
     print(hashlib.sha256(f.read()).hexdigest())
-" "$archive" 2>/dev/null)
+PY_HASH
+)
         if [[ -z "$actual_hash" ]]; then
             out_fail "Could not compute SHA256 of downloaded archive."
             rm -rf "$tmp_dir"
@@ -224,15 +229,17 @@ with open(sys.argv[1], 'rb') as f:
         fi
         if [[ "$actual_hash" != "$expected_hash" ]]; then
             out_fail "SHA256 mismatch. Download may be corrupted or tampered."
-            out_fail "  expected: ${expected_hash}"
-            out_fail "  actual:   ${actual_hash}"
             rm -rf "$tmp_dir"
             return 1
         fi
-        out_ok "SHA256 verified: ${actual_hash:0:16}..."
+        out_ok "SHA256 verified."
+    elif [[ "$allow_unverified" == "true" ]]; then
+        out_warn "No checksum file found. Proceeding because --allow-unverified was provided."
     else
-        out_warn "No checksum file found for ${latest_tag}. Proceeding without verification."
-        out_warn "To verify manually: sha256sum ${archive}"
+        out_fail "No checksum file found for ${latest_tag}. Install blocked."
+        out_info "Use --allow-unverified only after manually verifying the release."
+        rm -rf "$tmp_dir"
+        return 1
     fi
 
     tar -xzf "$archive" -C "$tmp_dir" 2>/dev/null
@@ -251,13 +258,12 @@ with open(sys.argv[1], 'rb') as f:
         return 1
     fi
 
-    local install_target
+    local install_target install_dir
     install_target=$(which fleet 2>/dev/null || echo "${HOME}/.local/bin/fleet")
-    local install_dir
     install_dir=$(dirname "$install_target")
 
     if [[ ! -w "$install_dir" ]]; then
-        out_fail "Cannot write to ${install_dir}. Try: sudo fleet update"
+        out_fail "Cannot write to ${install_dir}. Install manually from the release archive."
         rm -rf "$tmp_dir"
         return 1
     fi
@@ -272,8 +278,6 @@ with open(sys.argv[1], 'rb') as f:
     done
 
     rm -rf "$tmp_dir"
-
-    # Remove stale cache so next invocation re-fetches
     [[ -f "$FLEET_UPDATE_CACHE" ]] && rm -f "$FLEET_UPDATE_CACHE"
 
     out_ok "Updated to ${latest_tag}."
@@ -282,19 +286,15 @@ with open(sys.argv[1], 'rb') as f:
     echo
 }
 
-# ── Version banner helper (called from bin/fleet on every invocation) ─────────
-# Prints a one-line update warning when a newer release is available.
-# Silent when already up to date or when GitHub is unreachable.
 fleet_update_banner() {
     local cache="$FLEET_UPDATE_CACHE"
     [[ -z "$FLEET_STATE_DIR" ]] && cache="${HOME}/.fleet/state/update_check.json"
 
     [[ ! -f "$cache" ]] && return 0
 
-    # Pass cache path as argument to avoid interpolating it into Python source
     local latest_tag
     latest_tag=$(python3 - "$cache" <<'PY'
-import json, os, time, sys
+import json, time, sys
 cache = sys.argv[1]
 try:
     with open(cache) as f:
@@ -313,7 +313,7 @@ PY
 
     if [[ "$rel" == "older" ]]; then
         local Y="\033[33m" N="\033[0m" B="\033[1m"
-        echo -e "${Y}${B}fleet ${latest_tag} is available${N}${Y}. Run  fleet update  to upgrade from ${FLEET_VERSION}.${N}" >&2
+        echo -e "${Y}${B}fleet ${latest_tag} is available${N}${Y}. Run  fleet update --check  to review from ${FLEET_VERSION}.${N}" >&2
         echo >&2
     fi
 }

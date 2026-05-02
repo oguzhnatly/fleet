@@ -91,7 +91,7 @@ assert_task_policy_dispatch() {
     cat > "$cfg" <<CFGDATA
 {"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"title":"Team Constitution","rules":["Never rewrite shared history","Run verification before completion"]}}
 CFGDATA
-    FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" task coder "fix tests" --type code --no-wait >/dev/null
+    FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" task coder "fix tests" --type code --no-wait --yes >/dev/null
     _wait_policy_capture || { _cleanup_policy_capture_server; return 1; }
     python3 - "$_POLICY_CAPTURE_FILE" <<'PYCHECK'
 import json, sys
@@ -114,7 +114,7 @@ assert_parallel_policy_dispatch() {
     cat > "$cfg" <<CFGDATA
 {"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"title":"Team Constitution","applyTo":["task","parallel","steer"],"rules":["Never rewrite shared history","Run verification before completion"]}}
 CFGDATA
-    printf 'y\n' | FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" parallel "implement login" --timeout 1 >/dev/null
+    FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" parallel "implement login" --timeout 1 --yes >/dev/null
     _wait_policy_capture || { _cleanup_policy_capture_server; return 1; }
     python3 - "$_POLICY_CAPTURE_FILE" <<'PYCHECK'
 import json, sys
@@ -137,7 +137,7 @@ assert_steer_policy_dispatch() {
     cat > "$cfg" <<CFGDATA
 {"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"title":"Team Constitution","applyTo":["task","parallel","steer"],"rules":["Never rewrite shared history","Run verification before completion"]}}
 CFGDATA
-    FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" steer coder "tighten review" >/dev/null
+    FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" steer coder "tighten review" --yes >/dev/null
     _wait_policy_capture || { _cleanup_policy_capture_server; return 1; }
     python3 - "$_POLICY_CAPTURE_FILE" <<'PYCHECK'
 import json, sys
@@ -160,7 +160,7 @@ assert_required_policy_blocks_task() {
     cat > "$cfg" <<CFGDATA
 {"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"required":true,"applyTo":["task"],"rules":[]}}
 CFGDATA
-    if FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" task coder "fix tests" --type code --no-wait >/dev/null 2>&1; then
+    if FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" task coder "fix tests" --type code --no-wait --yes >/dev/null 2>&1; then
         _cleanup_policy_capture_server
         return 1
     fi
@@ -180,7 +180,7 @@ assert_required_policy_blocks_steer() {
     cat > "$cfg" <<CFGDATA
 {"workspace":"~/workspace","agents":[{"name":"coder","port":$port,"token":"test"}],"constitution":{"enabled":true,"required":true,"applyTo":["steer"],"rules":[]}}
 CFGDATA
-    if FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" steer coder "tighten review" >/dev/null 2>&1; then
+    if FLEET_CONFIG="$cfg" FLEET_NO_UPDATE_CHECK=1 "$FBASH" "$FLEET" steer coder "tighten review" --yes >/dev/null 2>&1; then
         _cleanup_policy_capture_server
         return 1
     fi

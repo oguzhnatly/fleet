@@ -31,7 +31,7 @@ _openclaw_probe() {
 adapter_openclaw_health() {
     local entry_json="$1"
     python3 - "$entry_json" "${FLEET_ADAPTER_TIMEOUT:-6}" <<'HEALTH_PY'
-import json, subprocess, sys, time
+import json, os, subprocess, sys, time
 e = {}
 try:
     e = json.loads(sys.argv[1])
@@ -40,7 +40,7 @@ except Exception:
 timeout = sys.argv[2]
 host = e.get("host", "127.0.0.1")
 port = e.get("port")
-token = e.get("token", "")
+token = os.environ.get(e.get("tokenEnv") or e.get("token_env") or "", "") or e.get("token", "")
 if not port:
     print(json.dumps({"status":"error","code":"","elapsed_ms":0,"verified":False,"message":"port required"}))
     sys.exit(0)

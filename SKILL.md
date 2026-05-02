@@ -51,18 +51,20 @@ installSpec:
   manual: "git clone https://github.com/oguzhnatly/fleet.git && fleet/bin/fleet init"
   initRequired: true
   initWrites:
-    - "~/.fleet/config.json (chmod 600 immediately on creation, stores agent tokens in plaintext)"
-    - "~/.local/bin/fleet (symlink to binary)"
-    - "~/.bashrc or ~/.zshrc or ~/.profile (PATH export appended only if ~/.local/bin not already present)"
+    - "~/.fleet/config.json (chmod 600 immediately on creation, tokenEnv preferred for agent auth)"
+  optionalWrites:
+    - "~/.local/bin/fleet (symlink only when fleet init --link or --path is used)"
+    - "~/.bashrc or ~/.zshrc or ~/.profile (PATH export only when fleet init --path is used and confirmed)"
   initReads:
     - "~/.openclaw/openclaw.json (read-only, one-time workspace path detection)"
     - "127.0.0.1:40000-50000 (loopback port scan, one-time gateway discovery)"
   skipInit: "Clone repo, create ~/.fleet/config.json from templates/configs/minimal.json, add bin/ to PATH manually. No automatic writes."
 updateSpec:
-  command: "fleet update"
+  command: "fleet update --check"
+  installCommand: "fleet update --install --yes"
   source: "api.github.com/repos/oguzhnatly/fleet/releases/latest"
-  verification: "SHA256 verified against fleet.sha256 published with each release. Extraction halts on mismatch."
-  backgroundCheck: "Once per 24h, non-blocking. Disable with FLEET_NO_UPDATE_CHECK=1"
+  verification: "Install is explicit, confirmation-gated, restricted to oguzhnatly/fleet by default, and blocked unless a checksum is present or the operator explicitly allows an unverified archive."
+  backgroundCheck: "Once per 24h, non-blocking check only. Disable with FLEET_NO_UPDATE_CHECK=1"
 permissions:
   reads:
     - "~/.fleet/ (config, state, logs, backups, and custom adapters created or dropped by the operator)"
@@ -71,22 +73,25 @@ permissions:
     - "/proc/meminfo (Linux only, fleet sitrep)"
   writes:
     - "~/.fleet/ (all fleet-created data)"
-    - "~/.local/bin/fleet (symlink, fleet init)"
-    - "~/.bashrc or ~/.zshrc or ~/.profile (PATH export, fleet init, only if not already present)"
+    - "~/.local/bin/fleet (symlink only when fleet init --link or --path is used)"
+    - "~/.bashrc or ~/.zshrc or ~/.profile (only when fleet init --path is used and confirmed)"
   network:
     - "127.0.0.1:<agent-ports> (loopback only, operator config)"
     - "api.github.com/repos/<operator-repos>/actions/runs (fleet ci, operator gh CLI auth)"
     - "api.github.com/repos/oguzhnatly/fleet/releases/latest (background update check, 24h cache)"
     - "Operator-configured endpoint URLs (fleet health, runtime health, and runtime version probes only)"
 sensitive:
-  storedPlaintext:
-    - "~/.fleet/config.json: agent gateway auth tokens"
-  hardening: "chmod 600 applied automatically by fleet init. Documented in SECURITY.md."
+  preferredSecretSource:
+    - "tokenEnv fields that point to operator-managed environment variables"
+  legacyPlaintext:
+    - "~/.fleet/config.json may contain inline token fields for backwards compatibility, but tokenEnv is preferred"
+  hardening: "chmod 600 applied automatically by fleet init. fleet audit warns on inline tokens, placeholder tokens, missing tokenEnv values, and loose config permissions."
 agentScope:
   permitted:
     - "Run fleet commands within operator-configured scope"
-    - "Run fleet init to create config and link binary"
-    - "Run fleet update after operator explicitly requests it"
+    - "Run fleet init to create config"
+    - "Run dispatch, steer, parallel, kill, restore, secret backup, or update install with --yes only after explicit operator approval in the current conversation"
+    - "Run fleet update --check for release status"
   notPermitted:
     - "Implement fleet functionality by other means if fleet commands fail"
     - "Autonomously run system package managers (apt-get, brew, dnf, apk, etc.) to install dependencies"
@@ -101,15 +106,15 @@ agentScope:
 
 ## Intent, Authorization, and Trust
 
-**Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator. Fleet is designed for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks, and any shell capable coding agent or editor that can read a skill file and run commands. The operator installed this skill intentionally, knowing it enables autonomous fleet management.
+**Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator. Fleet is designed for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks, and any shell capable coding agent or editor that can read a skill file and run commands.
 
-**What "authorized" means here:** Installing this skill is the operator's explicit consent to all behaviors described below. The skill contacts only the operator's own agent gateways (loopback), the operator's own GitHub repos via their authenticated gh CLI, and api.github.com for fleet's own release updates (documented, non-blocking, once per 24h). It does not escalate privileges beyond the installing user's home directory and does not take any action outside the local fleet the operator already controls.
+**What "authorized" means here:** Installing this skill authorizes local fleet visibility and read-only checks. Commands that dispatch work, steer agents, run parallel tasks, stop agents, restore backups, include credential-bearing backups, or install updates require an explicit confirmation or `--yes` from a current operator instruction.
 
-**Why some behaviors appear aggressive:** This skill is designed for an AI coordinator agent, not an end-user running it manually. The coordinator agent has full context of the fleet, so prompting for confirmation on setup steps would interrupt its work. The operator installed the skill specifically to enable autonomous operation. Every aggressive action listed has a specific operational purpose documented inline.
+**Safety defaults:** Setup creates `~/.fleet/config.json` only. Symlink creation requires `fleet init --link`. Shell rc modification requires `fleet init --path` and confirmation. Updates are check-only unless `fleet update --install` is used. Credential storage prefers `tokenEnv`; inline token fields remain only for backwards compatibility.
 
 **What this skill never does (hard limits):**
 - Never installs software that requires root or sudo without explicit operator instruction
-- Never modifies files outside `~/.fleet/`, `~/.local/bin/`, and the shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`) of the installing user
+- Never modifies files outside `~/.fleet/` by default. `~/.local/bin/fleet` is written only with `fleet init --link` or `fleet init --path`. Shell rc files are touched only with `fleet init --path` after confirmation
 - Never contacts external services except: (1) operator-configured agent gateways on loopback, (2) operator-configured endpoint URLs for health checks, (3) operator's GitHub repos via their authenticated gh CLI for CI status, (4) api.github.com/repos/oguzhnatly/fleet/releases/latest for background update checks (documented, non-blocking, once per 24h, disable by setting FLEET_NO_UPDATE_CHECK=1)
 - Never exfiltrates configuration, tokens, or session data
 - Never modifies OpenClaw configuration without an explicit operator instruction
@@ -138,14 +143,14 @@ Fleet never opens listening ports, never accepts inbound connections, and never 
 ### Filesystem scope
 Fleet reads and writes only:
 - `~/.fleet/`: fleet config, state, logs, backups (all created by fleet itself)
-- `~/.local/bin/fleet`: a symlink to the fleet binary (created by `fleet init`, standard XDG location)
-- Shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`): only to append `export PATH="$HOME/.local/bin:$PATH"` if not already present
-- Session output for `fleet watch`: reads the specific session file fleet itself created for the named agent under `~/.openclaw*/agents/*/sessions/<fleet-session-id>.jsonl`. This file may contain conversation transcript data from that agent session. Fleet never reads sessions it did not create, other users' sessions, or the coordinator's main session (unless `--all` flag is explicitly passed).
+- `~/.local/bin/fleet`: optional symlink created only by `fleet init --link` or `fleet init --path`
+- Shell rc files (`~/.bashrc`, `~/.zshrc`, `~/.profile`): only with `fleet init --path` after confirmation
+- Session output for `fleet watch`: reads the specific session file fleet itself created for the named agent under `~/.openclaw*/agents/*/sessions/<fleet-session-id>.jsonl`. This file may contain conversation transcript data from that agent session. Fleet never reads sessions it did not create, other users' sessions, or the full main session unless `--all --yes` is explicitly passed.
 
 Fleet never reads or writes outside the installing user's home directory. Fleet never accesses sessions it did not create. Fleet reads `~/.openclaw/openclaw.json` once during `fleet init` to auto-detect the workspace path (read-only, never written). Fleet never modifies OpenClaw config files.
 
 ### Credential scope
-Fleet reads auth tokens from `~/.fleet/config.json` only. These tokens belong to the operator's own agents and are stored in plaintext in that file. Fleet never transmits them outside loopback. Fleet never reads other credential stores (ssh keys, cloud credentials, browser storage, OS keychain). Recommended hardening: `chmod 600 ~/.fleet/config.json`.
+Fleet prefers `tokenEnv` entries that point to environment variables owned by the operator. Legacy inline `token` fields are still supported for backwards compatibility, but `fleet audit` warns about inline tokens, placeholder tokens, missing tokenEnv values, and loose config permissions. Tokens are used only for loopback agent gateway requests and are never transmitted outside loopback.
 
 ### Privilege scope
 Fleet never calls `sudo`. Fleet never requests elevated permissions. All install commands that require system-level package managers (e.g., `apt-get`, `brew`) are run as the current user and listed explicitly in the compatibility playbook above.
@@ -156,11 +161,11 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 
 | Situation | Action |
 |-----------|--------|
-| Send a task to an agent | `fleet task coder "add pagination to /api/spots"` |
+| Send a task to an agent | `fleet task coder "add pagination to /api/spots" --yes` after operator approval |
 | Watch what an agent is doing | `fleet watch coder` |
-| Watch what the coordinator is doing | `fleet watch coordinator` |
-| Send a mid-task correction | `fleet steer coder "also add rate limiting"` |
-| Stop an agent's current task | `fleet kill coder` |
+| Watch full main session history | `fleet watch coder --all --yes` after operator approval |
+| Send a mid-task correction | `fleet steer coder "also add rate limiting" --yes` after operator approval |
+| Stop an agent's current task | `fleet kill coder --yes` after operator approval |
 | See all recent dispatches and outcomes | `fleet log` |
 | Decompose a task across multiple agents | `fleet parallel "<task>" --dry-run` (plan first, agents selected by trust) |
 | Check if all agents are alive | `fleet agents` |
@@ -172,9 +177,9 @@ Fleet never calls `sudo`. Fleet never requests elevated permissions. All install
 | Check reliability for a specific task type | `fleet score coder --type code` |
 | Check CI for specific repo | `fleet ci <name>` |
 | See what skills are installed | `fleet skills` |
-| Backup everything before a change | `fleet backup` |
-| Restore after something broke | `fleet restore` |
-| First time setup | `fleet init` |
+| Backup safe config snapshot | `fleet backup` |
+| Restore after something broke | `fleet restore --yes` after operator approval |
+| First time setup | `fleet init`, optionally `fleet init --link` |
 | User asks "how's the fleet?" | `fleet agents`, summarize |
 | User asks "what changed?" | `fleet sitrep`, report deltas |
 | Scheduled morning report | `fleet sitrep 12` in cron |
@@ -227,46 +232,17 @@ fleet policy preview coder "fix failing tests" --type code
 
 Treat this as prompt level enforcement. It helps compliant coding agents follow the operator's rules, but it does not replace sandboxing, git hooks, CI, or human review.
 
-## Auto-Setup
+## Setup
 
-**Purpose:** These steps ensure the fleet binary is usable on first run. They only touch files the installing user already owns. No root access is needed or used.
+**Purpose:** Create a local Fleet config without surprising filesystem changes. No root access is needed or used.
 
-**What this modifies:** Executable permission on the fleet binary, a symlink in `~/.local/bin/` (the standard user-local bin directory), and PATH in the user's own shell rc file if `~/.local/bin` is not already on PATH.
+**Default behavior:** `fleet init` creates `~/.fleet/config.json`, sets it to mode 600, scans loopback ports for local gateways, and reads `~/.openclaw/openclaw.json` once for workspace detection. It does not create a symlink and does not edit shell rc files.
 
-**Why no confirmation prompt by default:** The operator installed this skill specifically to have the coordinator handle setup autonomously. The consent to auto-setup is given at install time.
+**Optional link:** `fleet init --link` creates `~/.local/bin/fleet`.
 
-**Explicit opt-out:** If the operator has NOT explicitly authorized auto-setup (e.g., they are evaluating the skill before full deployment), stop here and ask before running the steps below. The question to ask: "Fleet needs to symlink its binary to `~/.local/bin/fleet` and may add a PATH export to your shell rc file. Is that OK?"
+**Optional PATH write:** `fleet init --path` creates the symlink and may append the PATH export to the user shell rc files, but only after confirmation. In automation, use `fleet init --path --yes` only when the operator explicitly approved that shell rc change.
 
-**Shell rc modification rule:** Only add the PATH export if `~/.local/bin` is not already on PATH. Check first with `echo $PATH | grep -q "$HOME/.local/bin"`. If it is already there, skip the rc modification entirely.
-
-```bash
-# 1. Make the binary executable: only affects the fleet script itself
-chmod +x "$(dirname "$0")/bin/fleet"
-
-# 2. Symlink into ~/.local/bin: user-owned directory, standard XDG location
-ln -sf "$(dirname "$0")/bin/fleet" "$HOME/.local/bin/fleet"
-
-# 3. Add to PATH only if not already present
-if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
-    export PATH="$HOME/.local/bin:$PATH"
-    # Append to shell rc only if not already there
-    for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
-        [ -f "$rc" ] && grep -q "local/bin" "$rc" || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
-    done
-fi
-
-# 4. Create initial config if none exists: only writes to ~/.fleet/
-if [ ! -f "$HOME/.fleet/config.json" ]; then
-    fleet init
-fi
-
-# 5. Verify
-fleet --version
-```
-
-`fleet init` auto-detects running gateways (by scanning loopback ports the operator's fleet uses), discovers the workspace from the existing OpenClaw config, creates `~/.fleet/config.json`, symlinks the binary, and adds `~/.local/bin` to PATH in shell rc files only if it is not already present. All changes are scoped to the installing user's home directory.
-
-After init, populate `~/.fleet/config.json` with agent names, tokens, repo references, and endpoint URLs from your knowledge of the running fleet. The coordinator agent already knows this information.
+After init, prefer `tokenEnv` for agent auth. Inline `token` fields are legacy compatibility only.
 
 ### Via ClawHub
 
@@ -279,6 +255,7 @@ clawhub install fleet
 ```bash
 git clone https://github.com/oguzhnatly/fleet.git
 fleet/bin/fleet init
+# Optional after review: fleet/bin/fleet init --link
 ```
 
 ## Configuration
@@ -291,7 +268,7 @@ Fleet reads `~/.fleet/config.json`. Generate one automatically or create manuall
 fleet init
 ```
 
-This scans for running OpenClaw gateways, detects your workspace, and creates a starter config.
+This scans loopback for running OpenClaw gateways, detects your workspace, and creates a starter config. It does not edit shell rc files unless `--path` is used.
 
 ### Manual Configuration
 
@@ -312,7 +289,7 @@ Create `~/.fleet/config.json`:
       "port": 48520,
       "role": "implementation",
       "model": "coding-default",
-      "token": "your-agent-token"
+      "tokenEnv": "FLEET_CODER_TOKEN"
     }
   ],
   "endpoints": [
@@ -338,7 +315,8 @@ Create `~/.fleet/config.json`:
 | `agents[].port` | number | Yes | Gateway port number |
 | `agents[].role` | string | No | What this agent does |
 | `agents[].model` | string | No | Model used |
-| `agents[].token` | string | No | Auth token for API calls |
+| `agents[].tokenEnv` | string | No | Environment variable containing auth token for API calls |
+| `agents[].token` | string | No | Legacy inline auth token, avoid when possible |
 | `endpoints[]` | array | No | URLs to health check |
 | `endpoints[].name` | string | Yes | Display name |
 | `endpoints[].url` | string | Yes | Full URL to check |
@@ -367,7 +345,7 @@ Create `~/.fleet/config.json`:
 
 Dispatches a task to a named agent and streams the response live.
 
-**Requires:** Agent token in `~/.fleet/config.json` under `agents[].token`.
+**Requires:** Agent auth through `agents[].tokenEnv` or legacy `agents[].token`. Prefer tokenEnv.
 
 **Options:**
 - `--type code|review|research|deploy|qa`: override task type (auto-inferred from prompt if omitted)
@@ -415,8 +393,7 @@ Fleet Steer
 Live tail of the agent's active fleet session output. Polls the session file that fleet itself created for that agent, showing new messages as they arrive.
 
 - Default: watches the `fleet-{agent}` session (the one fleet task created)
-- `--all`: watches the agent's full main session
-- `coordinator`: always watches the main coordinator session
+- `--all --yes`: watches the full main session only after explicit operator approval
 
 **Output:**
 ```
@@ -434,7 +411,7 @@ Watching coder
   Starting with the cursor-based approach...
 ```
 
-**Important:** `fleet watch coder` shows nothing if no task has been dispatched yet. Run `fleet task coder "<prompt>"` first to create the fleet session. Use `fleet watch coder --all` to see the agent's full history.
+**Important:** `fleet watch coder` shows nothing if no task has been dispatched yet. Run `fleet task coder "<prompt>"` first to create the fleet session. Use `fleet watch coder --all --yes` only after approval to see full main session history.
 
 ### `fleet kill <agent> [--force]`
 
@@ -701,15 +678,15 @@ from ~/workspace/skills
 
 ### `fleet backup`
 
-Backs up OpenClaw config, cron jobs, fleet config, and auth profiles.
+Creates a safe backup of OpenClaw config, cron jobs, and a sanitized Fleet config. OpenClaw login profile files are excluded by default.
 
-**When to use:** Before major changes, before updates, periodic safety net.
+**When to use:** Before major changes, before updates, periodic safety net. Use `--include-secrets` or `--include-auth` only after operator approval.
 
 **Backup location:** `~/.fleet/backups/<timestamp>/`
 
 ### `fleet restore`
 
-Restores from the latest backup.
+Restores from the latest backup after confirmation.
 
 **When to use:** After a bad config change, after a failed update.
 
@@ -728,19 +705,20 @@ Interactive setup that auto-detects running gateways and creates initial config.
 
 ### `fleet update`
 
-Self-upgrade command. Fetches the latest release from GitHub and installs automatically.
+Release check and explicit installer. The default command checks only and does not install by default.
 
 ```
-fleet update             Install latest release when a newer one exists
+fleet update             Check latest release without installing
 fleet update --check     Report available update without installing
-fleet update --force     Reinstall even when already on latest
+fleet update --install   Install after confirmation
+fleet update --install --yes  Install only after explicit operator approval
 ```
 
 **Version banner:** When a newer release is available, every fleet command prints a one-line
 warning on stderr before its output:
 
 ```
-fleet v4.1.0 is available. Run  fleet update  to upgrade from v4.0.0.
+fleet v4.1.0 is available. Run  fleet update --check  to review from v4.0.0.
 ```
 
 The GitHub check runs as a detached background process once per 24 hours so there
@@ -764,8 +742,8 @@ without manual JSON editing.
 
 | Type | Required | Common options |
 |------|----------|----------------|
-| `openclaw` | `--port=<n>` | `--host`, `--token`, `--role`, `--model` |
-| `http`     | `--url=<URL>` | `--expected-status`, `--method`, `--token`, `--header K=V`, `--version-url` |
+| `openclaw` | `--port=<n>` | `--host`, `--token-env`, legacy `--token`, `--role`, `--model` |
+| `http`     | `--url=<URL>` | `--expected-status`, `--method`, `--token-env`, legacy `--token`, `--header K=V`, `--version-url` |
 | `docker`   | `--container=<name>` | `--role`, `--model` |
 | `process`  | `--process=<pat>` | `--match-full`, `--role` |
 
@@ -921,7 +899,7 @@ Log fleet operational learnings to `.learnings/`:
 
 Fleet requires three things: **bash 4+**, **python3 3.10+**, and **curl**. Below is the complete platform-by-platform installation reference. Install the missing dependencies, then run `fleet init`.
 
-**Operator action required:** The commands in this section are for the operator to run manually, not for the agent to run autonomously. The agent must not run system package managers on the operator's behalf. If a dependency is missing, the agent reports it and the operator installs it using the appropriate command below.
+**Operator action required:** The commands in this section are for the operator to run manually, not for the agent to run without operator approval. The agent must not run system package managers on the operator's behalf. If a dependency is missing, the agent reports it and the operator installs it using the appropriate command below.
 
 Where root is required (e.g., `apt-get` on some systems), the command is shown explicitly. Prefer user-level installs (`--user`, `pyenv`, `$HOME/.local`) when root is not available.
 

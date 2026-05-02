@@ -12,7 +12,7 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
     "name": "string: display name for the coordinator",
     "role": "string: role description (use 'coordinator' for the main agent)",
     "model": "string: model identifier",
-    "token": "string: auth token for HTTP API calls to coordinator (required for fleet watch coordinator)"
+    "tokenEnv": "string: env var containing auth token for HTTP API calls"
   },
   "agents": [
     {
@@ -20,7 +20,7 @@ Fleet reads from `~/.fleet/config.json` by default. Override with `FLEET_CONFIG`
       "port": "number: gateway port",
       "role": "string: what this agent does",
       "model": "string: model identifier",
-      "token": "string: auth token for HTTP API"
+      "tokenEnv": "string: env var containing auth token for HTTP API"
     }
   ],
   "constitution": {

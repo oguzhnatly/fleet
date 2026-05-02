@@ -1,16 +1,24 @@
 #!/bin/bash
 # fleet steer: Send a mid-session correction to a running agent
 # Sends to the same fleet session as fleet task (stable session key: fleet-<agent>)
-# Usage: fleet steer <agent> "<message>"
+# Usage: fleet steer <agent> "<message>" [--yes]
 
 cmd_steer() {
     if [[ $# -lt 2 ]]; then
-        echo "  Usage: fleet steer <agent> \"<message>\""
-        echo "  Example: fleet steer coder \"also add rate limiting to that endpoint\""
+        echo "  Usage: fleet steer <agent> \"<message>\" [--yes]"
+        echo "  Example: fleet steer coder \"also add rate limiting to that endpoint\" --yes"
         return 1
     fi
 
-    local agent="$1" message="$2"
+    local agent="$1" message="$2" assume_yes=false
+    shift 2
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --yes|-y) assume_yes=true; shift ;;
+            *) shift ;;
+        esac
+    done
 
     local port token
     port="$(_agent_config "$agent" "port")"
@@ -29,6 +37,8 @@ cmd_steer() {
         return 1
     fi
     dispatch_message="$(fleet_policy_apply "$message" "$agent" "steer" "steer")"
+
+    fleet_confirm_action "steer $agent" "$message" "$assume_yes" || return 1
 
     out_header "Fleet Steer"
     out_kv "Agent"   "$agent"

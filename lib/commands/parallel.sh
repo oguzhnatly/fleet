@@ -1,6 +1,6 @@
 #!/bin/bash
 # fleet parallel: Decompose a high-level task into subtasks and dispatch in parallel
-# Usage: fleet parallel "<task>" [--dry-run] [--timeout <minutes>]
+# Usage: fleet parallel "<task>" [--dry-run] [--timeout <minutes>] [--yes]
 
 # ── v3: Trust-weighted decomposition ─────────────────────────────────────────
 # Selects the highest-trust agent per task type from the dispatch log.
@@ -184,7 +184,7 @@ PY
 }
 
 cmd_parallel() {
-    local task="" dry_run=false timeout_min=30
+    local task="" dry_run=false timeout_min=30 assume_yes=false
 
     if [[ $# -lt 1 ]]; then
         echo "  Usage: fleet parallel \"<task>\" [--dry-run] [--timeout <minutes>]"
@@ -198,6 +198,7 @@ cmd_parallel() {
         case "$1" in
             --dry-run|-n) dry_run=true; shift ;;
             --timeout)    timeout_min="${2:-30}"; shift 2 ;;
+            --yes|-y)     assume_yes=true; shift ;;
             *) shift ;;
         esac
     done
@@ -248,12 +249,7 @@ PY
     fi
 
     # ── Confirm before executing ────────────────────────────────────────────
-    echo -e "  ${CLR_YELLOW}Execute? [y/N]${CLR_RESET} \c"
-    read -r confirm
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        out_dim "Cancelled."
-        return 0
-    fi
+    fleet_confirm_action "dispatch parallel tasks" "This sends work to multiple configured agents." "$assume_yes" || return 1
 
     echo ""
     out_section "Dispatching..."
@@ -284,6 +280,12 @@ lock = threading.Lock()
 
 def now_ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def token_from_config(conf):
+    env_name = conf.get("tokenEnv") or conf.get("token_env") or ""
+    if env_name:
+        return os.environ.get(env_name, "")
+    return conf.get("token", "")
 
 def policy_guard(agent, task_type, action="parallel"):
     required = bool(policy.get("required", False) or policy.get("strict", False))
@@ -358,7 +360,7 @@ def run_subtask(st):
     agent_name = st["agent"]
     agent_conf = agent_map.get(agent_name, {})
     port       = agent_conf.get("port", "")
-    token      = agent_conf.get("token", "")
+    token      = token_from_config(agent_conf)
     prompt     = st["prompt"]
     task_type  = st["type"]
 

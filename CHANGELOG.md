@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Security hardening
+
+- Added explicit confirmation gates for task dispatch, steering, parallel execution, kill, restore, full session watch, credential-bearing backups, and update install.
+- Changed `fleet init` to create only a locked config by default. Symlink and shell rc writes now require explicit flags.
+- Changed `fleet update` to check only by default. Install now requires `--install`, approval, trusted repo guard, and checksum or explicit unverified override.
+- Backups now redact token values by default, exclude OpenClaw login profile files by default, and write backup directories and files with private permissions.
+- Added `tokenEnv` support across agent configs, runtime probes, status views, and examples.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -52,9 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `SKILL.md` frontmatter: added `metadata.openclaw.requires.bins` block so clawhub registry header correctly declares required binaries (resolves "no required binaries / instruction-only" mismatch)
 - `SKILL.md` frontmatter: added `envVars` block including `LINEAR_API_KEY` referenced in examples
-- `agentScope.permitted`: removed "install missing dependencies via package manager" — agents must report missing deps to the operator, not install them autonomously
-- `agentScope.notPermitted`: explicitly bans autonomous package manager execution and any sudo/root commands without explicit operator instruction
-- `SKILL.md` body: dependency section clarified as operator-action reference, not agent-autonomous steps
+- `agentScope.permitted`: removed "install missing dependencies via package manager" — agents must report missing deps to the operator, not install them without operator approval
+- `agentScope.notPermitted`: explicitly bans approval-gated package manager execution and any sudo/root commands without explicit operator instruction
+- `SKILL.md` body: dependency section clarified as operator-action reference, not agent-approval-gated steps
 
 ---
 
@@ -94,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0] 2026-03-15
 
 ### Added
-- `fleet update [--check] [--force]`: self-upgrade command. Fetches the latest release from GitHub, compares with the installed version, and installs automatically. `--check` reports availability without installing. `--force` reinstalls even when already current.
+- `fleet update [--check] [--force]`: earlier self-upgrade command. It fetched the latest release from GitHub, compared with the installed version, and could install when requested. `--check` reported availability without installing.
 - Outdated version banner: when a newer release is cached (checked once per 24 hours in the background), every fleet command prints a one-line warning on stderr recommending `fleet update`. Zero latency: the GitHub check runs as a detached background process.
 - `fleet trust [--window <hours>] [--json]`: trust matrix for all configured agents. Scores, trend indicators (↑↓→★), per-type breakdown, and task counts in one view. `--json` flag for scripting.
 - `fleet score [<agent>] [--window <hours>] [--type <task_type>]`: detailed per-agent reliability drill-down. Per-task-type breakdown with outcome counts, recent task history, and configurable filters. No agent argument shows a summary table for all agents.
@@ -150,7 +160,7 @@ recency weight = 2.0 (within windowHours), 1.0 (within 7d), 0.5 (older)
 
 ### Changed
 - `_meta.json`: version bumped to 2.0.0, added `permissions` block (reads/writes/network/never), `envVars` listing, `install` spec with consent statement, `sensitive` section, and accurate `requires` with version constraints. Resolves registry metadata mismatch.
-- `SKILL.md`: added "Intent, Authorization, and Trust" section, "Security Model" section with full network/filesystem/credential/privilege scope, inline red lines on every autonomous behavior, explicit opt-out path for shell rc modification, and PATH idempotency check before writing to rc files
+- `SKILL.md`: added "Intent, Authorization, and Trust" section, "Security Model" section with full network/filesystem/credential/privilege scope, inline red lines on every approval-gated behavior, explicit opt-out path for shell rc modification, and PATH idempotency check before writing to rc files
 
 ---
 
@@ -176,7 +186,7 @@ recency weight = 2.0 (within windowHours), 1.0 (within 7d), 0.5 (older)
 - `fleet audit` command: checks config, agent health, CI, resources, backups with actionable warnings
 - Terminal demo GIF in README (live recording against real gateways)
 - Platform-by-platform dependency installation reference in SKILL.md: bash 4+, python3 3.10+, curl for all major platforms
-- Auto PATH setup in `fleet init`: symlinks to `~/.local/bin`, updates shell rc files
+- Historical PATH setup in `fleet init`: could create `~/.local/bin/fleet` and touch shell rc files in older versions
 - bash 4+ version check with macOS-specific install guidance
 - "Why Fleet?" section with 6 value props
 - Collapsible command output examples in README

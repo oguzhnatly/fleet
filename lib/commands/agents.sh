@@ -59,7 +59,7 @@ for agent in agents:
     aport = agent.get("port", 0)
     arole = agent.get("role", aname)
     amodel = agent.get("model", "default")
-    atoken = agent.get("token", "")
+    atoken = os.environ.get(agent.get("tokenEnv") or agent.get("token_env") or "", "") or agent.get("token", "")
 
     try:
         start = time.time()

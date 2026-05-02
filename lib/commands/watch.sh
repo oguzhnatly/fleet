@@ -49,7 +49,7 @@ if os.path.exists(jsonl_path):
 }
 
 cmd_watch() {
-    local agent="" interval=3 show_all=false
+    local agent="" interval=3 show_all=false assume_yes=false
 
     if [[ $# -lt 1 ]]; then
         echo "  Usage: fleet watch <agent> [--interval <seconds>] [--all]"
@@ -64,6 +64,7 @@ cmd_watch() {
         case "$1" in
             --interval|-i) interval="${2:-3}"; shift 2 ;;
             --all)         show_all=true; shift ;;
+            --yes|-y)      assume_yes=true; shift ;;
             *) shift ;;
         esac
     done
@@ -84,10 +85,10 @@ cmd_watch() {
     fi
 
     # ── Determine which session to watch ──────────────────────────────────
-    # Coordinator: always agent:main:main
-    # Employees: fleet session (agent:main:fleet-<agent>) by default
-    #            --all: override to full main session (agent:main:main)
-    if [ "$role" = "coordinator" ] || [ "$show_all" = "true" ]; then
+    # Default: only the fleet-named session for the requested agent.
+    # --all: full main session, guarded because it may contain private history.
+    if [ "$show_all" = "true" ]; then
+        fleet_confirm_action "watch full session history for $agent" "This may display non-fleet transcript data from the local OpenClaw profile." "$assume_yes" || return 1
         session_key="agent:main:main"
         jsonl_path="$(_resolve_session_jsonl "$profile_dir" "$session_key")"
     else

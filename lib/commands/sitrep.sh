@@ -94,7 +94,7 @@ except Exception:
 
 for agent in config.get("agents", []):
     port = agent.get("port", 0)
-    token = agent.get("token", "")
+    token = os.environ.get(agent.get("tokenEnv") or agent.get("token_env") or "", "") or agent.get("token", "")
     try:
         r = subprocess.run(
             ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",

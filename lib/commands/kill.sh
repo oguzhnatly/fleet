@@ -1,21 +1,22 @@
 #!/bin/bash
 # fleet kill: Send a graceful stop signal to an agent session
 # Sends a termination message to the agent's fleet session
-# Usage: fleet kill <agent> [--force]
+# Usage: fleet kill <agent> [--force] [--yes]
 
 cmd_kill() {
     if [[ $# -lt 1 ]]; then
-        echo "  Usage: fleet kill <agent> [--force]"
-        echo "  Example: fleet kill coder"
+        echo "  Usage: fleet kill <agent> [--force] [--yes]"
+        echo "  Example: fleet kill coder --yes"
         return 1
     fi
 
-    local agent="$1" force=false
+    local agent="$1" force=false assume_yes=false
     shift
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --force|-f) force=true; shift ;;
+            --yes|-y) assume_yes=true; shift ;;
             *) shift ;;
         esac
     done
@@ -32,12 +33,14 @@ cmd_kill() {
     # First verify the agent is online
     local http_code
     http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 \
-        "http://127.0.0.1:${port}/health" 2>/dev/null)
+        "http://127.0.0.1:${port}/health" 2>/dev/null || true)
 
     if [ "$http_code" != "200" ]; then
         out_warn "Agent '$agent' appears offline (port $port). Nothing to kill."
         return 0
     fi
+
+    fleet_confirm_action "send stop signal to $agent" "This writes to the agent session and may interrupt active work." "$assume_yes" || return 1
 
     out_header "Fleet Kill"
     out_kv "Agent"   "$agent"

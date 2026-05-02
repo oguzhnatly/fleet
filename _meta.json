@@ -22,21 +22,24 @@
     "initRequired": true,
     "initCommand": "fleet init",
     "initWrites": [
-      "~/.fleet/config.json (chmod 600, contains agent gateway auth tokens in plaintext)",
-      "~/.local/bin/fleet (symlink to binary, standard XDG location)",
-      "~/.bashrc or ~/.zshrc or ~/.profile (PATH export appended only if ~/.local/bin not already on PATH)"
+      "~/.fleet/config.json (chmod 600, tokenEnv preferred for agent auth)"
     ],
     "initReads": [
       "~/.openclaw/openclaw.json (read-only, one-time workspace path auto-detection)",
       "127.0.0.1:40000-50000 (loopback port scan, one-time gateway discovery during init)"
     ],
-    "skipInit": "Manual alternative: clone repo, create ~/.fleet/config.json manually, add ~/.fleet/../bin to PATH. No automatic writes.",
+    "skipInit": "Manual alternative: clone repo, create ~/.fleet/config.json from templates/configs/minimal.json, add bin/ to PATH manually. No automatic writes.",
     "updateMechanism": {
-      "command": "fleet update",
+      "command": "fleet update --check",
+      "installCommand": "fleet update --install --yes",
       "source": "api.github.com/repos/oguzhnatly/fleet/releases/latest",
-      "verification": "SHA256 checksum verified against fleet.sha256 published alongside each GitHub release before extraction",
+      "verification": "Install is explicit, confirmation-gated, restricted to oguzhnatly/fleet by default, and blocked unless a checksum is present or the operator explicitly allows an unverified archive.",
       "disableCheck": "Set FLEET_NO_UPDATE_CHECK=1 to disable background version check and update banner"
-    }
+    },
+    "optionalWrites": [
+      "~/.local/bin/fleet (only with fleet init --link or --path)",
+      "~/.bashrc or ~/.zshrc or ~/.profile (only with fleet init --path and confirmation)"
+    ]
   },
   "envVars": {
     "optional": [
@@ -79,14 +82,14 @@
       "~/.fleet/config.json (agent gateway and runtime config created by fleet init)",
       "~/.fleet/state/ (delta tracking state created by fleet itself)",
       "~/.fleet/adapters/ (operator dropped custom adapter scripts loaded by the v4 adapter dispatcher)",
-      "~/.openclaw*/agents/main/sessions/<fleet-session-id>.jsonl (active output stream of the operator's own fleet-named sessions only, for fleet watch command)",
+      "~/.openclaw*/agents/main/sessions/<fleet-session-id>.jsonl (active output stream of the operator's own fleet-named sessions only, full main session only with fleet watch --all --yes)",
       "~/.openclaw*/openclaw.json (gateway config, read-only, only during fleet init auto-detection)",
       "/proc/meminfo (memory usage, for fleet sitrep resource section, Linux only)"
     ],
     "writes": [
-      "~/.fleet/ (config, state, logs, backups created by fleet itself)",
-      "~/.local/bin/fleet (symlink to fleet binary, created by fleet init, standard XDG location)",
-      "~/.bashrc or ~/.zshrc or ~/.profile (append PATH export only if ~/.local/bin is not already on PATH)"
+      "~/.fleet/ (config, state, logs, sanitized backups created by fleet itself)",
+      "~/.local/bin/fleet (optional symlink only with fleet init --link or --path)",
+      "~/.bashrc or ~/.zshrc or ~/.profile (only with fleet init --path and confirmation)"
     ],
     "network": [
       "127.0.0.1:<agent-ports> (loopback only, operator's own agent gateways listed in config)",
@@ -104,17 +107,20 @@
     ]
   },
   "sensitive": {
-    "storedPlaintext": [
-      "~/.fleet/config.json (agent gateway auth tokens)"
+    "preferredSecretSource": [
+      "tokenEnv fields that point to operator-managed environment variables"
     ],
-    "hardening": "chmod 600 ~/.fleet/config.json and chmod 700 ~/.openclaw ~/.openclaw-* as documented in SECURITY.md"
+    "legacyPlaintext": [
+      "~/.fleet/config.json may contain inline token fields for backwards compatibility, but tokenEnv is preferred"
+    ],
+    "hardening": "chmod 600 ~/.fleet/config.json. fleet audit warns on inline tokens, placeholder tokens, missing tokenEnv values, and loose permissions."
   },
   "install": {
     "method": "clawhub",
     "clawhub": "clawhub install fleet",
     "manual": "git clone https://github.com/oguzhnatly/fleet.git && fleet/bin/fleet init",
-    "initBehavior": "fleet init scans loopback ports for running gateways, reads ~/.openclaw/openclaw.json for workspace path, creates ~/.fleet/config.json, symlinks binary to ~/.local/bin/fleet, and appends PATH export to shell rc file if needed. All writes are within the installing user's home directory.",
-    "consent": "Installing this skill is the operator's explicit consent to the init behavior described above. If you do not want automatic writes to your home directory or shell rc modification, clone the repo and configure ~/.fleet/config.json manually without running fleet init."
+    "initBehavior": "fleet init scans loopback ports for running gateways, reads ~/.openclaw/openclaw.json for workspace path, and creates ~/.fleet/config.json with mode 600. Symlink creation requires fleet init --link. Shell rc modification requires fleet init --path and confirmation.",
+    "consent": "Installing this skill authorizes local read-only checks. Dispatch, steer, parallel execution, kill, restore, credential-bearing backup, watch --all, and update install require confirmation or --yes from a current operator instruction."
   },
   "installable": true
 }

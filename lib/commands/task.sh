@@ -1,6 +1,6 @@
 #!/bin/bash
 # fleet task: Dispatch a task to a named agent via its gateway
-# Usage: fleet task <agent> "<prompt>" [--type code|review|research|deploy|qa] [--timeout 30] [--no-wait]
+# Usage: fleet task <agent> "<prompt>" [--type code|review|research|deploy|qa] [--timeout 30] [--no-wait] [--yes]
 
 # ── Infer task type from prompt keywords ──────────────────────────────────────
 _infer_task_type() {
@@ -19,7 +19,7 @@ _infer_task_type() {
 _agent_config() {
     local name="$1" field="$2"
     python3 - "$FLEET_CONFIG_PATH" "$name" "$field" <<'PY'
-import json, sys
+import json, os, sys
 
 with open(sys.argv[1]) as f:
     c = json.load(f)
@@ -27,15 +27,22 @@ with open(sys.argv[1]) as f:
 name  = sys.argv[2]
 field = sys.argv[3]
 
+def field_value(entry, field):
+    if field == "token":
+        env_name = entry.get("tokenEnv") or entry.get("token_env") or ""
+        if env_name:
+            return os.environ.get(env_name, "")
+    return entry.get(field, "")
+
 for agent in c.get("agents", []):
     if agent.get("name") == name:
-        print(agent.get(field, ""))
+        print(field_value(agent, field))
         sys.exit(0)
 
 # Check gateway too (coordinator)
 gw = c.get("gateway", {})
 if gw.get("name") == name:
-    print(gw.get(field, ""))
+    print(field_value(gw, field))
     sys.exit(0)
 
 print("")
@@ -44,10 +51,10 @@ PY
 
 cmd_task() {
     # ── Parse args ─────────────────────────────────────────────────────────
-    local agent="" prompt="" task_type="" timeout_min=30 no_wait=false
+    local agent="" prompt="" task_type="" timeout_min=30 no_wait=false assume_yes=false
 
     if [[ $# -lt 2 ]]; then
-        echo "  Usage: fleet task <agent> \"<prompt>\" [--type code|review|research|deploy|qa] [--timeout <minutes>] [--no-wait]"
+        echo "  Usage: fleet task <agent> \"<prompt>\" [--type code|review|research|deploy|qa] [--timeout <minutes>] [--no-wait] [--yes]"
         echo "  Example: fleet task coder \"add pagination to /api/spots, tests required\""
         return 1
     fi
@@ -60,6 +67,7 @@ cmd_task() {
             --type|-t)    task_type="${2:-}"; shift 2 ;;
             --timeout)    timeout_min="${2:-30}"; shift 2 ;;
             --no-wait)    no_wait=true; shift ;;
+            --yes|-y)     assume_yes=true; shift ;;
             *) shift ;;
         esac
     done
@@ -89,6 +97,8 @@ cmd_task() {
         return 1
     fi
     dispatch_prompt="$(fleet_policy_apply "$prompt" "$agent" "$task_type" "task")"
+
+    fleet_confirm_action "dispatch task to $agent" "$prompt" "$assume_yes" || return 1
 
     # ── Log dispatch ────────────────────────────────────────────────────────
     local task_id

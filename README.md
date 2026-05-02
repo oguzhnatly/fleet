@@ -47,11 +47,11 @@ Dispatch work, steer live sessions, track outcomes, and keep OpenClaw gateways, 
 
 📊 **Delta tracking**: SITREP remembers the last run. Only shows what _changed_. No noise.
 
-🔧 **Zero config**: `fleet init` detects running gateways, discovers your workspace, links itself to PATH. One command to go from clone to operational.
+🔧 **Safe setup**: `fleet init` detects running gateways and creates a locked local config. Symlink and shell PATH writes are explicit opt-in flags.
 
 🧩 **Modular**: Each command is a separate file. Adding a new command means dropping a `.sh` file in `lib/commands/`. No monolith, no framework.
 
-⚡ **Agent native**: Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches any OpenClaw agent to manage a fleet autonomously. Explicit dependency installation steps are provided for every supported platform (bash 4+, python3 3.10+, curl).
+⚡ **Agent native**: Designed to be _used by agents_, not just humans. The [SKILL.md](SKILL.md) teaches OpenClaw and other coding agents how to manage a fleet with explicit approvals for high impact actions. Dependency installation steps are operator-action references for every supported platform.
 
 📦 **Pattern library**: Solo empire, dev team, research lab. Pre built configs for common setups.
 
@@ -85,7 +85,8 @@ npx skills add oguzhnatly/fleet
 
 # Or clone directly
 git clone https://github.com/oguzhnatly/fleet.git
-fleet/bin/fleet init    # links PATH, detects gateways, creates config
+fleet/bin/fleet init    # creates locked config and detects gateways
+# Optional after review: fleet/bin/fleet init --link
 
 # Check your fleet
 fleet agents
@@ -99,11 +100,11 @@ fleet sitrep
 
 | Command | Description |
 |---------|-------------|
-| `fleet task <agent> "<prompt>"` | Dispatch a task to an agent, stream response live |
-| `fleet steer <agent> "<message>"` | Send a mid-session correction to a running agent, with policy injection when enabled |
+| `fleet task <agent> "<prompt>" --yes` | Dispatch a task after operator approval, stream response live |
+| `fleet steer <agent> "<message>" --yes` | Send a mid-session correction after operator approval, with policy injection when enabled |
 | `fleet watch <agent>` | Live session tail: polls every 3s, shows new messages as they arrive |
-| `fleet parallel "<task>"` | Decompose into subtasks, assign by type, dispatch all concurrently |
-| `fleet kill <agent>` | Send a graceful stop signal to an agent session |
+| `fleet parallel "<task>" --dry-run` | Decompose into subtasks for review before confirmed dispatch |
+| `fleet kill <agent> --yes` | Send a graceful stop signal after operator approval |
 | `fleet log` | Append-only structured log of all dispatches and outcomes |
 | `fleet policy` | Show optional operator constitution rules applied to dispatched tasks |
 
@@ -152,10 +153,12 @@ Set `constitution.enabled` in config or use `fleet policy add` to prepend custom
 
 | Command | Description |
 |---------|-------------|
-| `fleet backup` | Backup gateway configs, cron jobs, auth profiles |
-| `fleet restore` | Restore from latest backup |
-| `fleet init` | Interactive setup with gateway detection |
-| `fleet update` | Upgrade to the latest fleet release from GitHub |
+| `fleet backup` | Backup gateway configs, cron jobs, and sanitized Fleet config |
+| `fleet restore --yes` | Restore from latest backup after operator approval |
+| `fleet init` | Setup with gateway detection, optional `--link` or `--path` |
+| `fleet update` | Check releases, install only with `--install` and approval |
+
+High impact commands support `--yes` for automation, but use it only when the current operator instruction explicitly approves the action. `fleet audit` checks config permissions, inline tokens, placeholder tokens, missing tokenEnv values, and backup state.
 
 <details>
 <summary><strong>See command output examples</strong></summary>
@@ -554,7 +557,7 @@ clawhub install fleet          # OpenClaw agents
 npx skills add oguzhnatly/fleet  # OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and shell capable agents
 ```
 
-The agent reads the skill file, learns the commands, and runs health checks autonomously during heartbeat cycles.
+The agent reads the skill file, learns the commands, and can run read-only health checks during heartbeat cycles. High impact commands require explicit approval.
 
 ## Requirements
 

@@ -38,7 +38,8 @@ _runtime_help() {
   OPTIONS
     --port=N             OpenClaw port
     --host=H             OpenClaw host (default 127.0.0.1)
-    --token=T            Bearer token for HTTP or OpenClaw auth
+    --token-env=NAME     Environment variable containing bearer token
+    --token=T            Legacy inline bearer token
     --url=URL            HTTP probe URL
     --version-url=URL    Optional separate version endpoint
     --expected-status=N  Expected HTTP status (default 200)
@@ -100,6 +101,7 @@ while i < len(sys.argv):
         try: entry["port"] = int(val)
         except Exception: entry["port"] = val
     elif norm == "host":          entry["host"] = val
+    elif norm == "token_env":     entry["tokenEnv"] = val
     elif norm == "token":         entry["token"] = val
     elif norm == "url":           entry["url"] = val
     elif norm == "version_url":   entry["versionUrl"] = val

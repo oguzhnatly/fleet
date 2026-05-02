@@ -12,35 +12,44 @@
       "port": 48420,
       "role": "data-analyst",
       "model": "review-default",
-      "token": "emp-analyst-token"
+      "tokenEnv": "FLEET_ANALYST_TOKEN"
     },
     {
       "name": "writer",
       "port": 48440,
       "role": "technical-writer",
       "model": "review-default",
-      "token": "emp-writer-token"
+      "tokenEnv": "FLEET_WRITER_TOKEN"
     },
     {
       "name": "scraper",
       "port": 48460,
       "role": "web-scraping",
       "model": "coding-default",
-      "token": "emp-scraper-token"
+      "tokenEnv": "FLEET_SCRAPER_TOKEN"
     },
     {
       "name": "fact-checker",
       "port": 48480,
       "role": "verification",
       "model": "coding-default",
-      "token": "emp-factcheck-token"
+      "tokenEnv": "FLEET_FACT_CHECKER_TOKEN"
     }
   ],
   "endpoints": [
-    { "name": "dashboard", "url": "https://research.mysite.com" }
+    {
+      "name": "dashboard",
+      "url": "https://research.mysite.com"
+    }
   ],
   "repos": [
-    { "name": "reports", "repo": "myorg/research-reports" },
-    { "name": "data-pipeline", "repo": "myorg/data-pipeline" }
+    {
+      "name": "reports",
+      "repo": "myorg/research-reports"
+    },
+    {
+      "name": "data-pipeline",
+      "repo": "myorg/data-pipeline"
+    }
   ]
 }

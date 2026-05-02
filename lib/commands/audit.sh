@@ -28,53 +28,82 @@ cmd_audit() {
         _inc_checks
         local perms
         perms=$(stat -c "%a" "$FLEET_CONFIG_PATH" 2>/dev/null || stat -f "%Lp" "$FLEET_CONFIG_PATH" 2>/dev/null)
-        if [ "$perms" = "600" ] || [ "$perms" = "644" ]; then
+        if [ "$perms" = "600" ] || [ "$perms" = "400" ]; then
             out_ok "Config permissions: $perms"
         else
-            out_warn "Config permissions: $perms (recommend 600 if tokens present)"
+            out_warn "Config permissions: $perms (recommend 600 because config can reference credentials)"
             _inc_warnings
         fi
 
-        # Check for empty tokens
+        # Check token sources
         _inc_checks
-        local empty_tokens
-        empty_tokens=$(python3 -c "
-import json
-with open('$FLEET_CONFIG_PATH') as f:
+        local token_report
+        token_report=$(python3 - "$FLEET_CONFIG_PATH" <<'PY_TOKEN_AUDIT' 2>/dev/null
+import json, os, sys
+with open(sys.argv[1]) as f:
     c = json.load(f)
-empty = [a['name'] for a in c.get('agents', []) if not a.get('token', '').strip()]
-print(len(empty))
-for n in empty: print(f'  {n}')
-" 2>/dev/null)
-        local empty_count
-        empty_count=$(echo "$empty_tokens" | head -1)
-        if [ "$empty_count" = "0" ]; then
-            out_ok "All agent tokens configured"
+missing = []
+inline = []
+placeholder = []
+for a in c.get('agents', []):
+    name = a.get('name', '?')
+    token = str(a.get('token', '') or '')
+    token_env = str(a.get('tokenEnv') or a.get('token_env') or '')
+    if token.lower() in ('your-token-here', 'your-agent-token', 'changeme', 'todo'):
+        placeholder.append(name)
+    if token:
+        inline.append(name)
+    elif token_env and os.environ.get(token_env):
+        pass
+    else:
+        missing.append(name)
+print(json.dumps({'missing': missing, 'inline': inline, 'placeholder': placeholder}))
+PY_TOKEN_AUDIT
+)
+        local missing_count inline_count placeholder_count
+        missing_count=$(python3 - "$token_report" <<'PY_COUNT'
+import json, sys
+print(len(json.loads(sys.argv[1]).get('missing', [])))
+PY_COUNT
+)
+        inline_count=$(python3 - "$token_report" <<'PY_COUNT'
+import json, sys
+print(len(json.loads(sys.argv[1]).get('inline', [])))
+PY_COUNT
+)
+        placeholder_count=$(python3 - "$token_report" <<'PY_COUNT'
+import json, sys
+print(len(json.loads(sys.argv[1]).get('placeholder', [])))
+PY_COUNT
+)
+        if [ "$missing_count" = "0" ]; then
+            out_ok "All agent token sources resolve"
         else
-            out_warn "$empty_count agent(s) have empty tokens"
-            echo "$empty_tokens" | tail -n +2
+            out_warn "$missing_count agent(s) have no token or resolved tokenEnv"
+            python3 - "$token_report" <<'PY_SHOW_MISSING'
+import json, sys
+for n in json.loads(sys.argv[1]).get('missing', []): print(f'  {n}')
+PY_SHOW_MISSING
             _inc_warnings
         fi
-
-        # Check for placeholder tokens
-        _inc_checks
-        local placeholder_tokens
-        placeholder_tokens=$(python3 -c "
-import json
-with open('$FLEET_CONFIG_PATH') as f:
-    c = json.load(f)
-placeholders = [a['name'] for a in c.get('agents', [])
-    if str(a.get('token', '')).lower() in ('your-token-here', 'your-agent-token', 'changeme', 'todo')]
-print(len(placeholders))
-for n in placeholders: print(f'  {n}')
-" 2>/dev/null)
-        local ph_count
-        ph_count=$(echo "$placeholder_tokens" | head -1)
-        if [ "$ph_count" = "0" ]; then
+        if [ "$inline_count" = "0" ]; then
+            out_ok "No inline agent tokens stored"
+        else
+            out_warn "$inline_count agent(s) store inline tokens, prefer tokenEnv"
+            python3 - "$token_report" <<'PY_SHOW_INLINE'
+import json, sys
+for n in json.loads(sys.argv[1]).get('inline', []): print(f'  {n}')
+PY_SHOW_INLINE
+            _inc_warnings
+        fi
+        if [ "$placeholder_count" = "0" ]; then
             out_ok "No placeholder tokens found"
         else
-            out_warn "$ph_count agent(s) have placeholder tokens"
-            echo "$placeholder_tokens" | tail -n +2
+            out_warn "$placeholder_count agent(s) have placeholder tokens"
+            python3 - "$token_report" <<'PY_SHOW_PLACEHOLDER'
+import json, sys
+for n in json.loads(sys.argv[1]).get('placeholder', []): print(f'  {n}')
+PY_SHOW_PLACEHOLDER
             _inc_warnings
         fi
     fi
@@ -89,23 +118,24 @@ for n in placeholders: print(f'  {n}')
 
         if [ "$total_agents" -gt 0 ]; then
             _inc_checks
-            offline_agents=$(python3 -c "
-import json, subprocess
-with open('$FLEET_CONFIG_PATH') as f:
+            offline_agents=$(python3 - "$FLEET_CONFIG_PATH" <<'PY_AGENT_AUDIT' 2>/dev/null | tail -1
+import json, subprocess, sys
+with open(sys.argv[1]) as f:
     c = json.load(f)
 offline = 0
 for a in c.get('agents', []):
     try:
         r = subprocess.run(['curl', '-s', '-o', '/dev/null', '-w', '%{http_code}',
-            '--max-time', '2', f'http://127.0.0.1:{a[\"port\"]}/health'],
+            '--max-time', '2', f'http://127.0.0.1:{a["port"]}/health'],
             capture_output=True, text=True)
         if r.stdout.strip() != '200':
             offline += 1
-            print(f'  {a[\"name\"]} (:{a[\"port\"]})')
-    except:
+            print(f'  {a["name"]} (:{a["port"]})')
+    except Exception:
         offline += 1
 print(offline)
-" 2>/dev/null | tail -1)
+PY_AGENT_AUDIT
+)
 
             if [ "$offline_agents" = "0" ]; then
                 out_ok "All $total_agents agents online"
@@ -140,9 +170,9 @@ print(offline)
 
         if fleet_has_config; then
             local red_repos
-            red_repos=$(python3 -c "
-import json, subprocess
-with open('$FLEET_CONFIG_PATH') as f:
+            red_repos=$(python3 - "$FLEET_CONFIG_PATH" <<'PY_CI_AUDIT' 2>/dev/null
+import json, subprocess, sys
+with open(sys.argv[1]) as f:
     c = json.load(f)
 red = []
 for r in c.get('repos', []):
@@ -152,9 +182,12 @@ for r in c.get('repos', []):
         runs = json.loads(result.stdout) if result.stdout.strip() else []
         if runs and runs[0].get('conclusion') == 'failure':
             red.append(r.get('name', r['repo']))
-    except: pass
-for r in red: print(r)
-" 2>/dev/null)
+    except Exception:
+        pass
+for r in red:
+    print(r)
+PY_CI_AUDIT
+)
 
             _inc_checks
             if [ -z "$red_repos" ]; then

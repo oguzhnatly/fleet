@@ -12,26 +12,40 @@
       "port": 48520,
       "role": "implementation",
       "model": "coding-default",
-      "token": "emp-coder-token"
+      "tokenEnv": "FLEET_CODER_TOKEN"
     },
     {
       "name": "reviewer",
       "port": 48540,
       "role": "code-review",
       "model": "coding-default",
-      "token": "emp-reviewer-token"
+      "tokenEnv": "FLEET_REVIEWER_TOKEN"
     }
   ],
   "endpoints": [
-    { "name": "website", "url": "https://myapp.com" },
-    { "name": "api", "url": "https://api.myapp.com/health" }
+    {
+      "name": "website",
+      "url": "https://myapp.com"
+    },
+    {
+      "name": "api",
+      "url": "https://api.myapp.com/health"
+    }
   ],
   "repos": [
-    { "name": "web", "repo": "myorg/web" },
-    { "name": "backend", "repo": "myorg/backend" }
+    {
+      "name": "web",
+      "repo": "myorg/web"
+    },
+    {
+      "name": "backend",
+      "repo": "myorg/backend"
+    }
   ],
   "linear": {
-    "teams": ["PROJ"],
+    "teams": [
+      "PROJ"
+    ],
     "apiKeyEnv": "LINEAR_API_KEY"
   }
 }

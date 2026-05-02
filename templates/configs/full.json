@@ -12,35 +12,35 @@
       "port": 48520,
       "role": "implementation",
       "model": "coding-default",
-      "token": "your-token-here"
+      "tokenEnv": "FLEET_CODER_TOKEN"
     },
     {
       "name": "reviewer",
       "port": 48540,
       "role": "code-review",
       "model": "coding-default",
-      "token": "your-token-here"
+      "tokenEnv": "FLEET_REVIEWER_TOKEN"
     },
     {
       "name": "deployer",
       "port": 48560,
       "role": "deployment",
       "model": "coding-default",
-      "token": "your-token-here"
+      "tokenEnv": "FLEET_DEPLOYER_TOKEN"
     },
     {
       "name": "qa",
       "port": 48580,
       "role": "quality-assurance",
       "model": "coding-default",
-      "token": "your-token-here"
+      "tokenEnv": "FLEET_QA_TOKEN"
     },
     {
       "name": "researcher",
       "port": 48600,
       "role": "research",
       "model": "coding-default",
-      "token": "your-token-here"
+      "tokenEnv": "FLEET_RESEARCHER_TOKEN"
     }
   ],
   "endpoints": [

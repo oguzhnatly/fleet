@@ -12,7 +12,7 @@
       "port": 48520,
       "role": "implementation",
       "model": "coding-default",
-      "token": "your-token-here"
+      "tokenEnv": "FLEET_CODER_TOKEN"
     }
   ],
   "runtimes": [
@@ -28,8 +28,8 @@
       "adapter": "http",
       "url": "https://auth.example.com/healthz",
       "expectedStatus": 200,
-      "token": "your-auth-probe-token",
-      "role": "external-service"
+      "role": "external-service",
+      "tokenEnv": "FLEET_AUTH_SERVICE_TOKEN"
     },
     {
       "name": "postgres",
@@ -63,12 +63,26 @@
     }
   ],
   "endpoints": [
-    { "name": "production", "url": "https://myapp.example.com", "expectedStatus": 200 },
-    { "name": "api-docs", "url": "https://docs.example.com", "expectedStatus": 200 }
+    {
+      "name": "production",
+      "url": "https://myapp.example.com",
+      "expectedStatus": 200
+    },
+    {
+      "name": "api-docs",
+      "url": "https://docs.example.com",
+      "expectedStatus": 200
+    }
   ],
   "repos": [
-    { "name": "backend", "repo": "myorg/backend" },
-    { "name": "infra", "repo": "myorg/infrastructure" }
+    {
+      "name": "backend",
+      "repo": "myorg/backend"
+    },
+    {
+      "name": "infra",
+      "repo": "myorg/infrastructure"
+    }
   ],
   "trust": {
     "windowHours": 72

@@ -15,7 +15,7 @@ adapter_http_required() { echo "url"; }
 adapter_http_health() {
     local entry_json="$1"
     python3 - "$entry_json" "${FLEET_ADAPTER_TIMEOUT:-6}" <<'HEALTH_PY'
-import json, subprocess, sys, time
+import json, os, subprocess, sys, time
 try:
     e = json.loads(sys.argv[1])
 except Exception:
@@ -24,7 +24,7 @@ timeout = sys.argv[2]
 url = e.get("url","")
 expected = str(e.get("expectedStatus", 200))
 method = e.get("method","GET").upper()
-token = e.get("token","")
+token = os.environ.get(e.get("tokenEnv") or e.get("token_env") or "", "") or e.get("token","")
 extra_headers = e.get("headers", {}) or {}
 if not url:
     print(json.dumps({"status":"error","code":"","elapsed_ms":0,"verified":False,"message":"url required"}))

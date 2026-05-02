@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090,SC1091
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  fleet · Multi-agent fleet management for OpenClaw                      ║
 # ║  https://github.com/oguzhnatly/fleet                                    ║
@@ -27,6 +27,7 @@ FLEET_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.." && pwd)"
 # ── Load core libraries ────────────────────────────────────────────────────
 source "$FLEET_ROOT/lib/core/config.sh"
 source "$FLEET_ROOT/lib/core/output.sh"
+source "$FLEET_ROOT/lib/core/security.sh"
 source "$FLEET_ROOT/lib/core/state.sh"
 source "$FLEET_ROOT/lib/core/trust.sh"
 source "$FLEET_ROOT/lib/core/adapters.sh"
@@ -67,7 +68,11 @@ BGPY_AGE
     fi
     (
         mkdir -p "${FLEET_STATE_DIR:-${HOME}/.fleet/state}"
-        local api="https://api.github.com/repos/${FLEET_UPDATE_REPO:-oguzhnatly/fleet}/releases/latest"
+        local repo="${FLEET_UPDATE_REPO:-oguzhnatly/fleet}"
+        if [[ "$repo" != "oguzhnatly/fleet" && -z "${FLEET_ALLOW_CUSTOM_UPDATE_REPO:-}" ]]; then
+            return 0
+        fi
+        local api="https://api.github.com/repos/${repo}/releases/latest"
         python3 - "$api" "$cache" "$now" <<'BGPY'
 import urllib.request, json, sys, os
 
@@ -109,11 +114,11 @@ cmd_help() {
   ⛵ fleet: Multi-agent fleet management for OpenClaw
 
   DISPATCH
-    fleet task <agent> "<prompt>"     Dispatch a task to an agent
-    fleet steer <agent> "<message>"   Send mid-session correction
+    fleet task <agent> "<prompt>"     Dispatch a task to an agent after confirmation
+    fleet steer <agent> "<message>"   Send mid-session correction after confirmation
     fleet watch <agent>               Live session tail
-    fleet parallel "<task>"           Decompose and dispatch in parallel (trust-weighted)
-    fleet kill <agent>                Send graceful stop signal
+    fleet parallel "<task>"           Decompose and dispatch in parallel after confirmation
+    fleet kill <agent>                Send graceful stop signal after confirmation
     fleet log [--agent X] [--limit N] View dispatch history
     fleet policy                     Show operator constitution rules
 
@@ -140,10 +145,10 @@ cmd_help() {
     fleet skills              List installed ClawHub skills
 
   OPERATIONS
-    fleet backup              Backup all configs
-    fleet restore             Restore from latest backup
-    fleet init                Interactive setup (auto-links PATH)
-    fleet update              Upgrade to the latest fleet release
+    fleet backup              Backup safe config snapshots
+    fleet restore             Restore from latest backup after confirmation
+    fleet init                Setup config, optional link or PATH write
+    fleet update              Check for releases, install only with --install
 
   OPTIONS
     fleet --version           Show version
@@ -173,9 +178,9 @@ case "${1:-help}" in
     audit|check)         cmd_audit ;;
     ci)                  cmd_ci "${2:-}" ;;
     skills)              cmd_skills ;;
-    backup)              cmd_backup ;;
-    restore)             cmd_restore ;;
-    init|setup)          cmd_init ;;
+    backup)              cmd_backup "${@:2}" ;;
+    restore)             cmd_restore "${@:2}" ;;
+    init|setup)          cmd_init "${@:2}" ;;
     trust)               cmd_trust "${@:2}" ;;
     score)               cmd_score "${@:2}" ;;
     adapters)            cmd_adapters ;;

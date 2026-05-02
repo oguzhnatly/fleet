@@ -12,62 +12,86 @@
       "port": 48420,
       "role": "frontend-team-lead",
       "model": "review-default",
-      "token": "emp-fe-lead-token"
+      "tokenEnv": "FLEET_FRONTEND_LEAD_TOKEN"
     },
     {
       "name": "frontend-dev-1",
       "port": 48440,
       "role": "frontend-developer",
       "model": "coding-default",
-      "token": "emp-fe-dev1-token"
+      "tokenEnv": "FLEET_FRONTEND_DEV_1_TOKEN"
     },
     {
       "name": "frontend-dev-2",
       "port": 48460,
       "role": "frontend-developer",
       "model": "coding-default",
-      "token": "emp-fe-dev2-token"
+      "tokenEnv": "FLEET_FRONTEND_DEV_2_TOKEN"
     },
     {
       "name": "backend-lead",
       "port": 48520,
       "role": "backend-team-lead",
       "model": "review-default",
-      "token": "emp-be-lead-token"
+      "tokenEnv": "FLEET_BACKEND_LEAD_TOKEN"
     },
     {
       "name": "backend-dev-1",
       "port": 48540,
       "role": "backend-developer",
       "model": "coding-default",
-      "token": "emp-be-dev1-token"
+      "tokenEnv": "FLEET_BACKEND_DEV_1_TOKEN"
     },
     {
       "name": "qa-lead",
       "port": 48620,
       "role": "qa-manager",
       "model": "review-default",
-      "token": "emp-qa-lead-token"
+      "tokenEnv": "FLEET_QA_LEAD_TOKEN"
     },
     {
       "name": "qa-tester",
       "port": 48640,
       "role": "qa-tester",
       "model": "coding-default",
-      "token": "emp-qa-tester-token"
+      "tokenEnv": "FLEET_QA_TESTER_TOKEN"
     }
   ],
   "endpoints": [
-    { "name": "staging", "url": "https://staging.myproduct.com" },
-    { "name": "production", "url": "https://myproduct.com" },
-    { "name": "api-staging", "url": "https://api-staging.myproduct.com/health" },
-    { "name": "api-production", "url": "https://api.myproduct.com/health" }
+    {
+      "name": "staging",
+      "url": "https://staging.myproduct.com"
+    },
+    {
+      "name": "production",
+      "url": "https://myproduct.com"
+    },
+    {
+      "name": "api-staging",
+      "url": "https://api-staging.myproduct.com/health"
+    },
+    {
+      "name": "api-production",
+      "url": "https://api.myproduct.com/health"
+    }
   ],
   "repos": [
-    { "name": "frontend", "repo": "myorg/frontend" },
-    { "name": "backend", "repo": "myorg/backend" },
-    { "name": "shared-libs", "repo": "myorg/shared-libs" },
-    { "name": "infra", "repo": "myorg/infrastructure" }
+    {
+      "name": "frontend",
+      "repo": "myorg/frontend"
+    },
+    {
+      "name": "backend",
+      "repo": "myorg/backend"
+    },
+    {
+      "name": "shared-libs",
+      "repo": "myorg/shared-libs"
+    },
+    {
+      "name": "infra",
+      "repo": "myorg/infrastructure"
+    }
   ],
   "services": [
     "openclaw-gateway",
@@ -76,7 +100,11 @@
     "openclaw-gateway-qa-lead"
   ],
   "linear": {
-    "teams": ["FE", "BE", "QA"],
+    "teams": [
+      "FE",
+      "BE",
+      "QA"
+    ],
     "apiKeyEnv": "LINEAR_API_KEY"
   }
 }
