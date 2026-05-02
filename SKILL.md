@@ -16,7 +16,7 @@ metadata:
         kind: clawhub
         slug: fleet
         label: "Install fleet via ClawHub"
-description: "Multi-agent fleet management CLI for OpenClaw. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of agent gateways. Operations are local-only (loopback) plus explicitly declared external endpoints. Operator consent required before install."
+description: "Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Fleet shows what is online, routes work to the right agent, tracks who actually delivers, and keeps gateways, HTTP workers, Docker workers, and local processes accountable from one CLI. Network access stays limited to loopback and explicitly configured endpoints. Operator consent required before install."
 triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed, trust score, which agent is reliable, fleet trust, fleet score, agent reliability, who should I assign, best agent for task"
 requires:
   binaries:
@@ -37,6 +37,10 @@ envVars:
       description: "Override trust scoring window in hours (default: 72)"
     - name: FLEET_NO_UPDATE_CHECK
       description: "Set to 1 to disable background GitHub update check entirely"
+    - name: FLEET_ADAPTER_TIMEOUT
+      description: "Maximum seconds for a single adapter health or version probe (default: 6)"
+    - name: FLEET_ADAPTERS_DIR
+      description: "Directory for custom adapter scripts (default: ~/.fleet/adapters)"
     - name: LINEAR_API_KEY
       description: "Linear API key for CI ticket integration (optional, referenced in examples/solo-empire/config.json)"
     - name: NO_COLOR
@@ -61,7 +65,7 @@ updateSpec:
   backgroundCheck: "Once per 24h, non-blocking. Disable with FLEET_NO_UPDATE_CHECK=1"
 permissions:
   reads:
-    - "~/.fleet/ (config, state, logs, backups created by fleet itself)"
+    - "~/.fleet/ (config, state, logs, backups, and custom adapters created or dropped by the operator)"
     - "~/.openclaw/openclaw.json (read-only, fleet init only, workspace path detection)"
     - "~/.openclaw*/agents/*/sessions/<fleet-session-id>.jsonl (fleet watch: only fleet-named sessions)"
     - "/proc/meminfo (Linux only, fleet sitrep)"
@@ -73,7 +77,7 @@ permissions:
     - "127.0.0.1:<agent-ports> (loopback only, operator config)"
     - "api.github.com/repos/<operator-repos>/actions/runs (fleet ci, operator gh CLI auth)"
     - "api.github.com/repos/oguzhnatly/fleet/releases/latest (background update check, 24h cache)"
-    - "Operator-configured endpoint URLs (fleet health only)"
+    - "Operator-configured endpoint URLs (fleet health, runtime health, and runtime version probes only)"
 sensitive:
   storedPlaintext:
     - "~/.fleet/config.json: agent gateway auth tokens"
@@ -97,7 +101,7 @@ agentScope:
 
 ## Intent, Authorization, and Trust
 
-**Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator. Fleet is designed for OpenClaw, Claude Code, Codex, Cursor, Windsurf, and any coding agent or editor that can read a skill file and run shell commands. The operator installed this skill intentionally, knowing it enables autonomous fleet management.
+**Who this skill is for:** A coordinator AI agent that has been explicitly configured by its operator. Fleet is designed for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks, and any shell capable coding agent or editor that can read a skill file and run commands. The operator installed this skill intentionally, knowing it enables autonomous fleet management.
 
 **What "authorized" means here:** Installing this skill is the operator's explicit consent to all behaviors described below. The skill contacts only the operator's own agent gateways (loopback), the operator's own GitHub repos via their authenticated gh CLI, and api.github.com for fleet's own release updates (documented, non-blocking, once per 24h). It does not escalate privileges beyond the installing user's home directory and does not take any action outside the local fleet the operator already controls.
 
@@ -117,7 +121,7 @@ agentScope:
 
 ---
 
-CLI toolkit for managing, dispatching to, and observing a fleet of OpenClaw agent gateways plus v4 runtimes such as HTTP services, Docker containers, and OS processes. The coordinator agent uses fleet to monitor employees, dispatch tasks, steer running sessions, watch live output, and review dispatch history.
+Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Fleet gives operators clear visibility into agent health, live work, reliability, runtime status, and dispatch history across gateways, HTTP workers, Docker workers, and local processes.
 
 ## Security Model
 
