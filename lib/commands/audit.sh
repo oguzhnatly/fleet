@@ -64,7 +64,7 @@ import json
 with open('$FLEET_CONFIG_PATH') as f:
     c = json.load(f)
 placeholders = [a['name'] for a in c.get('agents', [])
-    if a.get('token', '') in ('your-token-here', 'your-agent-token', 'changeme', 'TODO')]
+    if str(a.get('token', '')).lower() in ('your-token-here', 'your-agent-token', 'changeme', 'todo')]
 print(len(placeholders))
 for n in placeholders: print(f'  {n}')
 " 2>/dev/null)
