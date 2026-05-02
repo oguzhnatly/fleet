@@ -2,10 +2,10 @@
   <img src="assets/banner.svg" alt="Fleet" width="800" />
 </p>
 
-<h3 align="center">Multi-agent fleet management for <a href="https://openclaw.ai">OpenClaw</a></h3>
+<h3 align="center">Multi-agent fleet management for OpenClaw, Claude Code, Codex, and every AI agent</h3>
 
 <p align="center">
-  <strong>One CLI to monitor, manage, and orchestrate your entire AI agent fleet.</strong>
+  <strong>Coordinate OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks from one fast CLI.</strong>
 </p>
 
 <p align="center">
@@ -29,9 +29,9 @@
 
 ---
 
-You're running multiple [OpenClaw](https://openclaw.ai) gateways: a coordinator that thinks, employees that code, review, deploy, and research. Fleet is the operational layer that was missing. One CLI that gives your coordinator full visibility, control, and judgment over the entire fleet.
+Fleet brings OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks into one multi-agent fleet management layer. See what is online, who is reliable, what changed, and where work needs attention before it becomes noise.
 
-See what changed. Dispatch tasks. Learn which agents actually deliver, and route work to whoever you can trust. Works with any runtime: OpenClaw, HTTP, Docker, or bare OS processes, through a unified adapter interface.
+Dispatch work, steer live sessions, track outcomes, and monitor OpenClaw gateways, HTTP workers, Docker workers, and local processes from one CLI. Built for all AI agents, not one runtime.
 
 <p align="center">
   <em>Built for AI agents to manage AI agents. Works on any system 🦞</em>
@@ -80,7 +80,7 @@ See what changed. Dispatch tasks. Learn which agents actually deliver, and route
 # Install via ClawHub
 clawhub install fleet
 
-# Or via skills.sh (works with Claude Code, Codex, Cursor, Windsurf, and other coding agents)
+# Or via skills.sh for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and shell capable agents
 npx skills add oguzhnatly/fleet
 
 # Or clone directly
@@ -111,8 +111,8 @@ fleet sitrep
 
 | Command | Description |
 |---------|-------------|
-| `fleet health` | Health check all gateways, endpoints, and v4 runtimes |
-| `fleet agents` | Show agent fleet with live status and latency, plus v4 runtimes |
+| `fleet health` | Health check all gateways, endpoints, and configured runtimes |
+| `fleet agents` | Show agent fleet with live status and latency, plus configured runtimes |
 | `fleet sitrep [hours]` | Full SITREP with delta tracking across agents, CI, runtimes |
 | `fleet audit` | Check for misconfigurations and risks |
 
@@ -547,11 +547,11 @@ Modular by design. Each command is a separate file. Add your own by dropping a `
 
 ## For AI Agents
 
-Fleet ships with a [`SKILL.md`](SKILL.md) that any AI coding agent can read. It is designed for Claude Code, Codex, Cursor, Windsurf, OpenClaw, and any other coding agent or editor that can read a skill file and run shell commands. Install it and your coordinator automatically knows how to manage the fleet:
+Fleet ships with a [`SKILL.md`](SKILL.md) that AI coding agents can read. It is designed for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks, and any shell capable coding agent or editor. Install it and your coordinator automatically knows how to manage the fleet:
 
 ```bash
 clawhub install fleet          # OpenClaw agents
-npx skills add oguzhnatly/fleet  # Claude Code, Codex, Cursor, Windsurf, and other coding agents
+npx skills add oguzhnatly/fleet  # OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and shell capable agents
 ```
 
 The agent reads the skill file, learns the commands, and runs health checks autonomously during heartbeat cycles.

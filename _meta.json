@@ -2,7 +2,7 @@
   "slug": "fleet",
   "version": "4.0.0",
   "type": "installable-cli",
-  "description": "Multi-agent fleet management CLI with a cross runtime adapter layer. Probes OpenClaw, generic HTTP, Docker, and OS process targets through a single contract. Coordinator agent tool for monitoring, dispatching tasks to, and observing a fleet of runtimes. All operations are local (loopback only). Operator consent is required before install.",
+  "description": "Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Fleet shows what is online, routes work to the right agent, tracks who actually delivers, and keeps gateways, HTTP endpoints, Docker workers, and OS processes accountable from one CLI. Network access stays limited to loopback and explicitly configured endpoints. Operator consent is required before install.",
   "requires": {
     "binaries": [
       "bash",
