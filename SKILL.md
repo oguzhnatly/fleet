@@ -740,7 +740,7 @@ fleet update --force     Reinstall even when already on latest
 warning on stderr before its output:
 
 ```
-fleet v3.1.0 is available. Run  fleet update  to upgrade from v3.0.0.
+fleet v4.1.0 is available. Run  fleet update  to upgrade from v4.0.0.
 ```
 
 The GitHub check runs as a detached background process once per 24 hours so there
