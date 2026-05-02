@@ -1,6 +1,6 @@
 {
   "slug": "fleet",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "type": "installable-cli",
   "description": "Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. One CLI to monitor, manage, and orchestrate your entire AI agent fleet. Fleet judges reliability, routes intelligently, tracks deltas, and keeps gateways, HTTP endpoints, Docker workers, and OS processes accountable. Network access stays limited to loopback and explicitly configured endpoints. Operator consent is required before install.",
   "requires": {

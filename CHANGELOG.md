@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.0.1] · 2026-05-02
 
 ### Security hardening
 
@@ -9,11 +14,6 @@
 - Changed `fleet update` to check only by default. Install now requires `--install`, approval, trusted repo guard, and checksum or explicit unverified override.
 - Backups now redact token values by default, exclude OpenClaw login profile files by default, and write backup directories and files with private permissions.
 - Added `tokenEnv` support across agent configs, runtime probes, status views, and examples.
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [4.0.0] · 2026-04-30
 
