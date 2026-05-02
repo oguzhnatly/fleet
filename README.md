@@ -595,7 +595,7 @@ Fleet learns which agents actually deliver, not just which ones are alive.
 - [x] v3.5: cross-validation: `fleet score` checks code/deploy successes against GitHub CI activity within 1h, flags unverified tasks
 
 ### v4: Shipped ✅ (cross-runtime adapter layer)
-Fleet works with any agent on any runtime, not just OpenClaw.
+OpenClaw remains the primary stack for Fleet, and v4 extends runtime visibility across Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks.
 
 - [x] Pluggable adapter interface: six-function contract (`describe`, `verified`, `required`, `health`, `info`, `version`) every runtime implements
 - [x] Built-in adapters: OpenClaw (verified), HTTP (any /health endpoint, verified), Docker (container state and health, verified when CLI present), Process (pgrep-based, inferred and labeled as such)
