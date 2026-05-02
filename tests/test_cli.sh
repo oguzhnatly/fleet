@@ -27,7 +27,7 @@ assert_output_contains() {
     shift 2
     local output
     output=$("$@" 2>&1)
-    if echo "$output" | grep -q "$expected"; then
+    if grep -F -q -- "$expected" <<< "$output"; then
         echo "  ✅ $desc"
         ((PASS++))
     else
@@ -200,7 +200,7 @@ echo ""
 echo "Syntax"
 FLEET_ROOT="$(cd "$(dirname "$FLEET")/.." && pwd)"
 for f in "$FLEET" "$FLEET_ROOT"/lib/core/*.sh "$FLEET_ROOT"/lib/adapters/*.sh "$FLEET_ROOT"/lib/commands/*.sh; do
-    [ -f "$f" ] && assert_ok "syntax: $(basename "$f")" bash -n "$f"
+    [ -f "$f" ] && assert_ok "syntax: $(basename "$f")" "$FBASH" -n "$f"
 done
 
 echo ""
@@ -257,6 +257,11 @@ assert_ok "policy optional command disables required mode" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy optional >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"required\"] is False'"
 assert_ok "policy clear command empties rules" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy clear >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert d[\"constitution\"][\"rules\"] == []'"
+cat > "$_TMP_POLICY_CFG" <<'CFGDATA'
+{"workspace":"~/workspace","agents":[{"name":"coder","port":48520}],"constitution":"bad"}
+CFGDATA
+assert_ok "policy commands normalize malformed constitution" \
+    "$FBASH" -c "FLEET_CONFIG='$_TMP_POLICY_CFG' '$FLEET' policy add 'Require local tests' >/dev/null; python3 -c 'import json; d=json.load(open(\"$_TMP_POLICY_CFG\")); assert isinstance(d[\"constitution\"], dict); assert d[\"constitution\"][\"rules\"] == [\"Require local tests\"]'"
 assert_ok "task dispatch sends policy injected prompt" assert_task_policy_dispatch
 assert_ok "parallel dispatch sends policy injected prompt" assert_parallel_policy_dispatch
 assert_ok "steer dispatch sends policy injected prompt" assert_steer_policy_dispatch
@@ -266,9 +271,9 @@ rm -f "$_TMP_POLICY_CFG"
 
 echo ""
 echo "Trust Engine (v3)"
-assert_ok "trust.sh syntax" bash -n "$FLEET_ROOT/lib/core/trust.sh"
-assert_ok "trust command syntax" bash -n "$FLEET_ROOT/lib/commands/trust.sh"
-assert_ok "score command syntax" bash -n "$FLEET_ROOT/lib/commands/score.sh"
+assert_ok "trust.sh syntax" "$FBASH" -n "$FLEET_ROOT/lib/core/trust.sh"
+assert_ok "trust command syntax" "$FBASH" -n "$FLEET_ROOT/lib/commands/trust.sh"
+assert_ok "score command syntax" "$FBASH" -n "$FLEET_ROOT/lib/commands/score.sh"
 assert_ok "trust help exits 0" "$FBASH" "$FLEET" trust --help
 assert_ok "score help exits 0" "$FBASH" "$FLEET" score --help
 assert_output_contains "help contains trust" "fleet trust" "$FBASH" "$FLEET" help
@@ -300,7 +305,7 @@ FLEET_CONFIG="$_EXAMPLE_CFG" FLEET_LOG="$_TMP_LOG" \
 rm -f "$_TMP_LOG"
 
 # update command
-assert_ok "update.sh syntax" bash -n "$FLEET_ROOT/lib/commands/update.sh"
+assert_ok "update.sh syntax" "$FBASH" -n "$FLEET_ROOT/lib/commands/update.sh"
 assert_ok "update help exits 0" "$FBASH" "$FLEET" update --help
 assert_output_contains "help contains update" "fleet update" "$FBASH" "$FLEET" help
 assert_ok "update check exits 0 with no network" "$FBASH" -c "
@@ -313,11 +318,11 @@ assert_ok "update install dir detection" "$FBASH" -c "
 
 echo ""
 echo "Adapter Layer (v4)"
-assert_ok "adapters.sh (core) syntax" bash -n "$FLEET_ROOT/lib/core/adapters.sh"
-assert_ok "adapters.sh (command) syntax" bash -n "$FLEET_ROOT/lib/commands/adapters.sh"
-assert_ok "runtime.sh (command) syntax" bash -n "$FLEET_ROOT/lib/commands/runtime.sh"
+assert_ok "adapters.sh (core) syntax" "$FBASH" -n "$FLEET_ROOT/lib/core/adapters.sh"
+assert_ok "adapters.sh (command) syntax" "$FBASH" -n "$FLEET_ROOT/lib/commands/adapters.sh"
+assert_ok "runtime.sh (command) syntax" "$FBASH" -n "$FLEET_ROOT/lib/commands/runtime.sh"
 for _a in openclaw http docker process; do
-    assert_ok "adapter/$_a.sh syntax" bash -n "$FLEET_ROOT/lib/adapters/$_a.sh"
+    assert_ok "adapter/$_a.sh syntax" "$FBASH" -n "$FLEET_ROOT/lib/adapters/$_a.sh"
 done
 
 # each built-in adapter must define the full six-function contract
@@ -467,6 +472,9 @@ assert_ok "runtime add http without url is rejected" \
 assert_ok "runtime test unknown name fails" \
     "$FBASH" -c "FLEET_CONFIG='$_TMP_CFG2' \"$FBASH\" '$FLEET' runtime test no-such 2>/dev/null; [ \$? -ne 0 ]"
 
+assert_ok "runtime parser respects match full false" \
+    "$FBASH" -c "source '$FLEET_ROOT/lib/commands/runtime.sh'; entry=\$(_runtime_parse_args edge process --process bash --match-full=false); ENTRY=\"\$entry\" python3 -c 'import json,os; d=json.loads(os.environ[\"ENTRY\"]); assert d[\"matchFull\"] is False'"
+
 # Custom adapter directory: drop a fake adapter and verify it loads
 _TMP_ADAPTERS_DIR=$(mktemp -d /tmp/fleet-test-adapters.XXXXXX)
 cat > "$_TMP_ADAPTERS_DIR/dummy.sh" <<'ADAPTER'
@@ -489,6 +497,16 @@ assert_ok "user adapter validation requires field" \
     "$FBASH" -c "FLEET_ADAPTERS_DIR='$_TMP_ADAPTERS_DIR' FLEET_ROOT='$FLEET_ROOT'; source '$FLEET_ROOT/lib/core/adapters.sh'; fleet_adapter_load_all; r=\$(fleet_adapter_validate '{\"adapter\":\"dummy\"}'); [ \"\$r\" = magic ]"
 assert_ok "user adapter health JSON valid" \
     "$FBASH" -c "FLEET_ADAPTERS_DIR='$_TMP_ADAPTERS_DIR' FLEET_ROOT='$FLEET_ROOT'; source '$FLEET_ROOT/lib/core/adapters.sh'; fleet_adapter_load_all; fleet_adapter_health '{\"adapter\":\"dummy\",\"magic\":\"x\"}' | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d[\"status\"]==\"online\"'"
+cat > "$_TMP_ADAPTERS_DIR/slow.sh" <<'ADAPTER'
+adapter_slow_describe() { echo "Slow adapter for tests"; }
+adapter_slow_verified() { echo "verified"; }
+adapter_slow_required() { echo ""; }
+adapter_slow_health() { sleep 2; echo '{"status":"online","code":"SLOW","elapsed_ms":2000,"verified":true,"message":""}'; }
+adapter_slow_info() { echo '{"type":"slow","verified":true}'; }
+adapter_slow_version() { echo '{"version":"1.0","verified":true}'; }
+ADAPTER
+assert_ok "adapter health timeout returns JSON error" \
+    "$FBASH" -c "FLEET_ADAPTER_TIMEOUT=1 FLEET_ADAPTERS_DIR='$_TMP_ADAPTERS_DIR' FLEET_ROOT='$FLEET_ROOT'; source '$FLEET_ROOT/lib/core/adapters.sh'; fleet_adapter_load_all; fleet_adapter_health '{\"adapter\":\"slow\"}' | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d[\"status\"]==\"error\"; assert \"timed out\" in d[\"message\"]'"
 rm -rf "$_TMP_ADAPTERS_DIR"
 
 # fleet_runtime_get returns agent or runtime by name

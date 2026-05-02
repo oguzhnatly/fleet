@@ -68,6 +68,16 @@ name, atype = sys.argv[1], sys.argv[2]
 entry = {"name": name, "adapter": atype}
 i = 3
 headers = {}
+def parse_bool(value):
+    if value is True:
+        return True
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in ("false", "0", "no", "off", "n"):
+            return False
+        if lowered in ("true", "1", "yes", "on", "y"):
+            return True
+    return bool(value)
 while i < len(sys.argv):
     arg = sys.argv[i]
     key = val = None
@@ -99,7 +109,7 @@ while i < len(sys.argv):
     elif norm == "method":        entry["method"] = val
     elif norm == "container":     entry["container"] = val
     elif norm == "process":       entry["process"] = val
-    elif norm == "match_full":    entry["matchFull"] = bool(val) if val is not True else True
+    elif norm == "match_full":    entry["matchFull"] = parse_bool(val)
     elif norm == "role":          entry["role"] = val
     elif norm == "model":         entry["model"] = val
     elif norm == "header" and isinstance(val, str) and "=" in val:
@@ -231,8 +241,6 @@ _runtime_test() {
     tmp_health="$(mktemp -t fleet_health.XXXXXX)"
     tmp_info="$(mktemp -t fleet_info.XXXXXX)"
     tmp_ver="$(mktemp -t fleet_ver.XXXXXX)"
-    # shellcheck disable=SC2064
-    trap "rm -f '$tmp_health' '$tmp_info' '$tmp_ver'" RETURN
 
     fleet_adapter_info    "$entry_json" > "$tmp_info" &
     fleet_adapter_version "$entry_json" > "$tmp_ver"  &
@@ -327,6 +335,7 @@ print(f"  {D}{'─'*56}{N}")
 print(f"  {icon}  {B}{label}{N}  {D}via {atype}  {ms}ms{N}")
 print()
 VERDICT_PY
+    rm -f "$tmp_health" "$tmp_info" "$tmp_ver"
 }
 
 _runtime_list() {

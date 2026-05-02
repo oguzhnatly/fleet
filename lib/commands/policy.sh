@@ -41,7 +41,10 @@ import json, os, sys
 path, action, value = sys.argv[1:4]
 with open(path) as f:
     cfg = json.load(f)
-policy = cfg.setdefault("constitution", {})
+policy = cfg.get("constitution")
+if not isinstance(policy, dict):
+    policy = {}
+    cfg["constitution"] = policy
 policy.setdefault("enabled", False)
 policy.setdefault("title", "Operator Constitution")
 policy.setdefault("mode", "prepend")
@@ -50,6 +53,10 @@ policy.setdefault("applyTo", ["task", "parallel", "steer"])
 policy.setdefault("rules", [])
 if isinstance(policy.get("rules"), str):
     policy["rules"] = [policy["rules"]]
+elif not isinstance(policy.get("rules"), list):
+    policy["rules"] = []
+if not isinstance(policy.get("applyTo"), list):
+    policy["applyTo"] = ["task", "parallel", "steer"]
 message = "updated"
 if action == "enable":
     policy["enabled"] = True

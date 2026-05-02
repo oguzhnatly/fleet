@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # fleet/lib/core/adapters.sh: Cross runtime adapter registry and dispatcher.
 #
 # Each adapter lives in lib/adapters/<type>.sh and defines six functions:
@@ -37,6 +37,14 @@ FLEET_ADAPTER_TIMEOUT="${FLEET_ADAPTER_TIMEOUT:-6}"
 FLEET_ADAPTERS_DIR_BUILTIN="$FLEET_ROOT/lib/adapters"
 FLEET_ADAPTERS_DIR_USER="${FLEET_ADAPTERS_DIR:-$HOME/.fleet/adapters}"
 
+if [ -n "${BASH_VERSION:-}" ] && [ "${BASH_VERSINFO[0]:-0}" -lt 4 ] 2>/dev/null; then
+    echo "fleet adapter layer requires bash 4 or newer." >&2
+    if (return 0 2>/dev/null); then
+        return 1
+    fi
+    exit 1
+fi
+
 # Registry: associative arrays of type to source path and origin.
 declare -gA FLEET_ADAPTER_PATHS
 declare -gA FLEET_ADAPTER_ORIGIN
@@ -69,6 +77,69 @@ fleet_adapter_types() {
 fleet_adapter_exists() {
     local type="$1"
     [ -n "${FLEET_ADAPTER_PATHS[$type]:-}" ]
+}
+
+_fleet_adapter_timeout_seconds() {
+    local timeout="${FLEET_ADAPTER_TIMEOUT:-6}"
+    case "$timeout" in
+        ''|*[!0-9]*) timeout=6 ;;
+    esac
+    [ "$timeout" -lt 1 ] && timeout=1
+    echo "$timeout"
+}
+
+_fleet_adapter_error_json() {
+    local type="$1" op="$2" message="$3"
+    python3 - "$type" "$op" "$message" <<'ADAPTER_ERROR_PY'
+import json, sys
+type_name, op, message = sys.argv[1:4]
+if op == "health":
+    payload = {"status":"error","code":"","elapsed_ms":0,"verified":False,"message":message}
+elif op == "info":
+    payload = {"type":type_name,"verified":False,"message":message}
+else:
+    payload = {"version":"","verified":False,"message":message}
+print(json.dumps(payload, separators=(",",":")))
+ADAPTER_ERROR_PY
+}
+
+_fleet_adapter_call_with_timeout() {
+    local type="$1" op="$2" entry_json="$3"
+    local fn="adapter_${type}_${op}"
+    if ! declare -F "$fn" >/dev/null; then
+        _fleet_adapter_error_json "$type" "$op" "adapter function missing: $fn"
+        return 0
+    fi
+
+    local timeout limit i tmp pid
+    timeout="$(_fleet_adapter_timeout_seconds)"
+    limit=$((timeout * 10))
+    tmp="$(mktemp -t fleet_adapter.XXXXXX)"
+    rm -f "$tmp" "$tmp.out" "$tmp.status"
+
+    (
+        set +e
+        "$fn" "$entry_json" > "$tmp.out" 2>/dev/null
+        printf '%s\n' "$?" > "$tmp.status"
+    ) &
+    pid=$!
+
+    i=0
+    while [ "$i" -lt "$limit" ]; do
+        if [ -f "$tmp.status" ]; then
+            wait "$pid" 2>/dev/null || true
+            cat "$tmp.out" 2>/dev/null || true
+            rm -f "$tmp" "$tmp.out" "$tmp.status"
+            return 0
+        fi
+        sleep 0.1
+        i=$((i + 1))
+    done
+
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    rm -f "$tmp" "$tmp.out" "$tmp.status"
+    _fleet_adapter_error_json "$type" "$op" "adapter $type $op timed out after ${timeout}s"
 }
 
 # Resolve which adapter type to use for a given entry.
@@ -122,7 +193,7 @@ fleet_adapter_health() {
         return 0
     fi
     local out
-    out="$(adapter_"${type}"_health "$entry_json" 2>/dev/null || echo "")"
+    out="$(_fleet_adapter_call_with_timeout "$type" health "$entry_json" || echo "")"
     if [ -z "$out" ]; then
         printf '{"status":"error","code":"","elapsed_ms":0,"verified":false,"message":"adapter %s returned no output"}\n' "$type"
         return 0
@@ -138,8 +209,13 @@ fleet_adapter_info() {
         printf '{"type":"%s","verified":false,"message":"unknown adapter"}\n' "$type"
         return 0
     fi
-    adapter_"${type}"_info "$entry_json" 2>/dev/null || \
+    local out
+    out="$(_fleet_adapter_call_with_timeout "$type" info "$entry_json" || echo "")"
+    if [ -n "$out" ]; then
+        echo "$out"
+    else
         printf '{"type":"%s","verified":false,"message":"info failed"}\n' "$type"
+    fi
 }
 
 fleet_adapter_version() {
@@ -150,8 +226,13 @@ fleet_adapter_version() {
         printf '{"version":"","verified":false}\n'
         return 0
     fi
-    adapter_"${type}"_version "$entry_json" 2>/dev/null || \
+    local out
+    out="$(_fleet_adapter_call_with_timeout "$type" version "$entry_json" || echo "")"
+    if [ -n "$out" ]; then
+        echo "$out"
+    else
         printf '{"version":"","verified":false}\n'
+    fi
 }
 
 # Iterate config entries: agents and runtimes, each prefixed "agent\t" or
@@ -284,8 +365,6 @@ fleet_adapter_probe_parallel() {
 
     local tmpdir
     tmpdir="$(mktemp -d -t fleet_probe.XXXXXX)"
-    # shellcheck disable=SC2064
-    trap "rm -rf '$tmpdir'" RETURN
 
     local i=0 entry pids=() entries=()
     for entry in "$@"; do
@@ -368,6 +447,7 @@ fleet_adapter_probe_parallel() {
     if [ "$n" -gt 0 ]; then
         _fleet_adapter_render_footer "$tmpdir" "$n"
     fi
+    rm -rf "$tmpdir"
 }
 
 # Look up a runtime or agent by name from config.
