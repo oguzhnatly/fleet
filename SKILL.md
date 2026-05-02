@@ -16,7 +16,7 @@ metadata:
         kind: clawhub
         slug: fleet
         label: "Install fleet via ClawHub"
-description: "Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Fleet shows what is online, routes work to the right agent, tracks who actually delivers, and keeps gateways, HTTP workers, Docker workers, and local processes accountable from one CLI. Network access stays limited to loopback and explicitly configured endpoints. Operator consent required before install."
+description: "Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. One CLI to monitor, manage, and orchestrate your entire AI agent fleet. Fleet judges reliability, routes intelligently, tracks deltas, and keeps gateways, HTTP workers, Docker workers, and local processes accountable. Network access stays limited to loopback and explicitly configured endpoints. Operator consent required before install."
 triggers: "check agents, fleet status, run sitrep, health check, dispatch task, send task to agent, steer agent, watch agent, parallel tasks, kill agent, fleet log, backup config, show agents, fleet report, how many agents online, CI status, what skills installed, trust score, which agent is reliable, fleet trust, fleet score, agent reliability, who should I assign, best agent for task"
 requires:
   binaries:
@@ -121,7 +121,7 @@ agentScope:
 
 ---
 
-Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Fleet gives operators clear visibility into agent health, live work, reliability, runtime status, and dispatch history across gateways, HTTP workers, Docker workers, and local processes.
+Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. One CLI to monitor, manage, and orchestrate your entire AI agent fleet. Fleet gives operators clear visibility into agent health, live work, reliability, runtime status, dispatch history, routing decisions, and delta tracking across gateways, HTTP workers, Docker workers, and local processes.
 
 ## Security Model
 

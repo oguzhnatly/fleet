@@ -2,10 +2,10 @@
   <img src="assets/banner.svg" alt="Fleet" width="800" />
 </p>
 
-<h3 align="center">Multi-agent fleet management for OpenClaw, Claude Code, Codex, and every AI agent</h3>
+<h3 align="center">Multi-agent fleet management for OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks</h3>
 
 <p align="center">
-  <strong>Coordinate OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks from one fast CLI.</strong>
+  <strong>One CLI to monitor, manage, and orchestrate your entire AI agent fleet.</strong>
 </p>
 
 <p align="center">
@@ -29,9 +29,9 @@
 
 ---
 
-Fleet brings OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks into one multi-agent fleet management layer. See what is online, who is reliable, what changed, and where work needs attention before it becomes noise.
+Fleet brings OpenClaw, Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks into one multi-agent fleet management CLI to orchestrate, monitor, judge reliability, and route intelligently across any runtime with delta tracking.
 
-Dispatch work, steer live sessions, track outcomes, and monitor OpenClaw gateways, HTTP workers, Docker workers, and local processes from one CLI. Built for all AI agents, not one runtime.
+Dispatch work, steer live sessions, track outcomes, and keep OpenClaw gateways, HTTP workers, Docker workers, and local processes accountable from one CLI. Built for every operator running more than one agent or runtime.
 
 <p align="center">
   <em>Built for AI agents to manage AI agents. Works on any system 🦞</em>
@@ -595,7 +595,7 @@ Fleet learns which agents actually deliver, not just which ones are alive.
 - [x] v3.5: cross-validation: `fleet score` checks code/deploy successes against GitHub CI activity within 1h, flags unverified tasks
 
 ### v4: Shipped ✅ (cross-runtime adapter layer)
-OpenClaw remains the primary stack for Fleet, and v4 extends runtime visibility across Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks.
+OpenClaw remains the primary stack for Fleet, and v4 extends orchestration, monitoring, reliability judging, routing, and delta tracking across Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks.
 
 - [x] Pluggable adapter interface: six-function contract (`describe`, `verified`, `required`, `health`, `info`, `version`) every runtime implements
 - [x] Built-in adapters: OpenClaw (verified), HTTP (any /health endpoint, verified), Docker (container state and health, verified when CLI present), Process (pgrep-based, inferred and labeled as such)

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.0.0] · 2026-04-30
 
 ### Added
-- **Cross runtime adapter layer**: OpenClaw remains the primary stack for Fleet, and v4 extends runtime visibility across Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Four built in adapters ship with the release.
+- **Cross runtime adapter layer**: OpenClaw remains the primary stack for Fleet, and v4 extends orchestration, monitoring, reliability judging, routing, and delta tracking across Claude Code, Codex, Cursor, Windsurf, Gemini CLI, and custom agent stacks. Four built in adapters ship with the release.
 - `lib/core/adapters.sh`: registry, dispatcher, validator, and parallel probe helper. Each adapter implements a six function contract (`describe`, `verified`, `required`, `health`, `info`, `version`) and must complete within `FLEET_ADAPTER_TIMEOUT` seconds (default 6).
 - `lib/adapters/openclaw.sh`: verified probe of OpenClaw gateways via `/health` with authenticated `/v1/models` fallback when a token is configured. Preserves v3 OpenClaw behavior exactly.
 - `lib/adapters/http.sh`: generic HTTP probe with `expectedStatus`, custom `method`, optional bearer token, repeatable `headers`, and an optional `versionUrl`.
